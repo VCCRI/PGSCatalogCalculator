@@ -406,8 +406,28 @@ getAllScores <- function(inDir){
 main <- function(){
   source('normScript.R')
   source('mergeVCF.R')
-  args <- commandArgs(trailingOnly=TRUE)
+  require(optparse)
+  library("optparse")
 
+  option_list <- list(
+    make_option(c("-f", "--file"), type="character", default=NULL,
+                help="Input VCF filename", metavar="character"),
+      make_option(c("-o", "--out"), type="character", default="sample_norm/",
+                help="output directory", metavar="character"),
+      make_option(c("-r", "--ref"), type="character", default="index.fa",
+                help="reference sequence file", metavar="character"),
+      make_option(c("-p", "--pgs-id"), type="character", default="PGS000073",
+                help="Single PGS ID to score file", metavar="character"),
+      make_option(c("-P", "--pgs-id-file"), type="character", default="sample.csv",
+                help="PGS ID that has list of Files", metavar="character")
+  )
+
+  opt_parser <- OptionParser(option_list=option_list)
+  opt <- parse_args(opt_parser)
+  if (is.null(opt$file)){
+    print_help(opt_parser)
+    stop("At least one argument must be supplied", call.=FALSE)
+  }
   require(future)
   require(promises)
   plan("multiprocess", workers=6)
@@ -415,9 +435,9 @@ main <- function(){
 
   normFile <- future({
     source('normScript.R')
-    baseNorm(inVCF=args[1],
-           inRef=args[2],
-           outFile=gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", args[1]))
+    baseNorm(inVCF=opt$file,
+           inRef=opt$ref,
+           outFile=gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", opt$file))
   }, packages=c("Rsamtools"))
 
   #while(!(resolved(inspecFile) & resolved(normFile))) {}
@@ -429,7 +449,7 @@ main <- function(){
      inputFile <- inspecFile
      scoreFiles <- lapply(inputFile, function(inObjec){
       scoreFiles <- data.table() 
-      if(length(args) == 3 & args[3] == inObjec@`pgsId`){
+      if(inObjec@`pgsId` == opt$`pgs-id` | is.na(opt$`pgs-id`)){
         require(doParallel)
         require(foreach)
         cl <- makeCluster(10)
