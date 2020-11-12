@@ -1,0 +1,27 @@
+---
+title: "PGS Catalog Scores"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+-----------------------------------------------------------------------
+
+###  Score Distribution
+
+![](quantilePlot/boxplot.png)
+
+-----------------------------------------------------------------------
+
+### Sample Risk
+
+```{r, echo=FALSE}
+require(data.table)
+DT::datatable(fread("sample_out.csv"), options = list(
+  pageLength = 50
+))

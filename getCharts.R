@@ -155,6 +155,12 @@ getPlots <- function(inFiles, inRecord){
   controlData <- fread("control_samples.csv", stringsAsFactors=F)
   lPLots <- lapply(list(unique(disData$PGS_RECORD_ID)), function(x){
     scoreData <- readScore(disData[PGS_RECORD_ID == x,], controlData[PGS_RECORD_ID == x,])
+    aggScore <- scoreData 
+    aggScore[,risk := ifelse(as.numeric(bin_PRS) <= 0.25, 'Low Risk', ifelse(as.numeric(bin_PRS) > 0.75, "High Risk", "Medium Risk"))]
+    needCols <- c("IID", "risk")
+    needScore <- aggScore[,..needCols]
+    colnames(needScore) <- c("Sample", "Risk")
+    fwrite(needScore, "sample_out.csv")
     inContTable <- lapply(1:4, function(x)createTable(inQuant=x, inData=scoreData))
     orDF <- do.call("rbind", lapply(inContTable, getORContT))
     orDF <- setDT(data.frame(orDF, stringsAsFactors=F))
@@ -174,7 +180,7 @@ setPlots <- function(inFiles){
   inTime <- Sys.time()
   inDir <- paste0("quantilePlot/")
   dir.create(inDir, showWarnings=FALSE)
-  inFile <- paste0(inDir, inTime, "-boxplot.png")
+  inFile <- paste0(inDir, "boxplot.png")
   print(inFile)
   #png(filename=inFile, width=1920, height=1080)
   require(ggplot2)
