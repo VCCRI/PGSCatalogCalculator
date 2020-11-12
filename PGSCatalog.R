@@ -403,7 +403,25 @@ getAllScores <- function(inDir){
   return(aggSamples)
 }
 
+packages <- function(inPackage){
+  tryCatch({
+     require(inPackage, character.only=T)
+  }, warning = function(w){
+    r <- getOption("repos")
+    r["CRAN"] <- "https://cran.csiro.au/"
+    options(repos = r)
+    install.packages(inPackage)
+    require(inPackage, character.only=T)
+  }, error = function(e){
+    r <- getOption("repos")
+    r["CRAN"] <- "https://cran.csiro.au/"
+    options(repos = r)
+    install.packages(inPackage)
+    require(inPackage, character.only=T)
+  })
+}
 main <- function(){
+  lapply(list("assertthat","cowplot","data.table","doParallel","foreach","ggplot2","glm2","httr","optparse","promises","questionr","RCurl", "readxl","Rsamtools"), packages)
   source('normScript.R')
   source('mergeVCF.R')
   require(optparse)
