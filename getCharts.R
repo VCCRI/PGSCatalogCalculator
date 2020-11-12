@@ -156,6 +156,7 @@ getPlots <- function(inFiles, inRecord){
   lPLots <- lapply(list(unique(disData$PGS_RECORD_ID)), function(x){
     scoreData <- readScore(disData[PGS_RECORD_ID == x,], controlData[PGS_RECORD_ID == x,])
     aggScore <- scoreData 
+    aggScore <- scoreData[subject_type == "case",]
     aggScore[,risk := ifelse(as.numeric(bin_PRS) <= 0.25, 'Low Risk', ifelse(as.numeric(bin_PRS) > 0.75, "High Risk", "Medium Risk"))]
     needCols <- c("IID", "risk")
     needScore <- aggScore[,..needCols]
