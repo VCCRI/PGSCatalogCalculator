@@ -421,7 +421,7 @@ packages <- function(inPackage){
   })
 }
 main <- function(){
-  lapply(list("assertthat","cowplot","data.table","doParallel","foreach","ggplot2","glm2","httr","optparse","promises","questionr","RCurl", "readxl","Rsamtools"), packages)
+  lapply(list("assertthat","cowplot","data.table","doParallel","foreach","ggplot2","glm2","httr","optparse","promises","questionr","RCurl", "readxl","Rsamtools", "future"), packages)
   source('normScript.R')
   source('mergeVCF.R')
   require(optparse)
