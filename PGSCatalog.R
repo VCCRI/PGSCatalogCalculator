@@ -434,14 +434,24 @@ main <- function(){
                 help="output directory", metavar="character"),
       make_option(c("-r", "--ref"), type="character", default="index.fa",
                 help="reference sequence file", metavar="character"),
-      make_option(c("-p", "--pgs-id"), type="character", default="PGS000073",
+      make_option(c("-p", "--pgs-id"), type="character", default=NULL,
                 help="Single PGS ID to score file", metavar="character"),
-      make_option(c("-P", "--pgs-id-file"), type="character", default="sample.csv",
+      make_option(c("-P", "--pgs-id-file"), type="character", default=NULL,
                 help="PGS ID that has list of Files", metavar="character")
   )
 
   opt_parser <- OptionParser(option_list=option_list)
   opt <- parse_args(opt_parser)
+  if (!(is.null(opt$`pgs-id-file`))){
+    # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
+    file <- fread(opt$`pgs-id-file`, stringsAsFactors=F, header=F)
+    file <- file$V1
+  } else if(!(is.null(opt$`pgs-id`))) {
+    file <- opt$`pgs-id`
+  } else {
+    print("Calculating all Scores")
+    file <- NA
+  }
   if (is.null(opt$file)){
     print_help(opt_parser)
     stop("At least one argument must be supplied", call.=FALSE)
@@ -467,7 +477,7 @@ main <- function(){
      inputFile <- inspecFile
      scoreFiles <- lapply(inputFile, function(inObjec){
       scoreFiles <- data.table() 
-      if(inObjec@`pgsId` == opt$`pgs-id` | is.na(opt$`pgs-id`)){
+      if(inObjec@`pgsId` %in% file | is.na(file)){
         require(doParallel)
         require(foreach)
         cl <- makeCluster(10)
