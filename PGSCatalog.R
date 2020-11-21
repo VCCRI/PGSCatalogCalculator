@@ -426,6 +426,7 @@ main <- function(){
   source('mergeVCF.R')
   require(optparse)
   library("optparse")
+  system(command="python2 -m pip install -r requirements.txt")
 
   option_list <- list(
     make_option(c("-f", "--file"), type="character", default=NULL,
