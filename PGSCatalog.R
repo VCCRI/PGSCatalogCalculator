@@ -1,5 +1,3 @@
-require(data.table)
-
 getPGSEFO <- function(inFile){
   tryCatch({
      require(readxl)
