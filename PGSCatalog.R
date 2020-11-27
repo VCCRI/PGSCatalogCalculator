@@ -419,7 +419,7 @@ packages <- function(inPackage){
   })
 }
 main <- function(){
-  lapply(list("assertthat","cowplot","data.table","doParallel","foreach","ggplot2","glm2","httr","optparse","promises","questionr","RCurl", "readxl","Rsamtools", "future"), packages)
+  lapply(list("assertthat","cowplot","data.table","doParallel","foreach","ggplot2","glm2","httr","optparse","promises","questionr","RCurl", "readxl","future"), packages)
   source('normScript.R')
   source('mergeVCF.R')
   require(optparse)
@@ -464,7 +464,7 @@ main <- function(){
     baseNorm(inVCF=opt$file,
            inRef=opt$ref,
            outFile=gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", opt$file))
-  }, packages=c("Rsamtools"))
+  })
 
   #while(!(resolved(inspecFile) & resolved(normFile))) {}
   while(!(resolved(normFile))) {}
