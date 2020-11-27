@@ -9,7 +9,7 @@ baseNorm <- function(inVCF, inRef, outFile){
   require(foreach)
   cl <- makeCluster(3)
   registerDoParallel(cl)
-  inDBN <- foreach(inChrom=chrom, .export = c("baseIndex"), .packages="Rsamtools") %dopar% {
+  inDBN <- foreach(inChrom=chrom, .export = c("baseIndex")) %dopar% {
     filtSNP <- gsub("\\.[a-zA-Z']+(\\.gz)?$", paste0("_",inChrom, "_snp", ".vcf.gz"), inVCF)
     #filtSNP <- gsub("\\.bcf", paste0("_",inChrom, "_snp", ".vcf.gz"), inVCF)
     #filterSNP <- system(command=paste('bcftools view', inVCF, '-i \'TYPE="snp"\' -r', inChrom, '-O z -o', filtSNP, '--threads 2'))
@@ -36,25 +36,6 @@ baseNorm <- function(inVCF, inRef, outFile){
 
 
 baseIndex <- function(inVCF){
-  tryCatch({
-    require(Rsamtools)
-  }, warning = function(w){
-    r = getOption("repos")
-    r["CRAN"] = "https://cran.csiro.au/"
-    options(repos = r)
-    if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-    BiocManager::install("Rsamtools")
-    require(Rsamtools)
-  }, error = function(e){
-    r = getOption("repos")
-    r["CRAN"] = "https://cran.csiro.au/"
-    options(repos = r)
-    if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-    BiocManager::install("Rsamtools")
-    require(Rsamtools)
-  })
   print("Indexing File")
   system(command=paste('bcftools index', inVCF))
   #indexTabix(file=inVCF, format="vcf")
