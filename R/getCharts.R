@@ -1,7 +1,3 @@
-require(data.table)
-require(assertthat)
-
-
 readScore <- function(inData, inControl, inNumBins=4){
 	## Function that reads in data and fam file and will split
 	## data into 4 equal parts unless otherwise specified
@@ -23,7 +19,7 @@ readScore <- function(inData, inControl, inNumBins=4){
 	assertthat::assert_that(ncol(inControl) == 3)
 	assertthat::assert_that(any(duplicated(inControl$IID)) == FALSE)
 	assertthat::assert_that(any(is.na(as.numeric(inControl$PRS))) == FALSE)
-  #inFam <- inFam[,..needCols]
+  #inFam <- inFam[,needCols,with=FALSE]
   #inFam$V6 <- as.numeric(inFam$V6)
   #assertthat::assert_that(any(is.na(as.numeric(inFam$V6))) == FALSE)
   nrowInit <- nrow(inData)
@@ -35,16 +31,15 @@ readScore <- function(inData, inControl, inNumBins=4){
   ## Need to be careful with ifelse
   inTotal$PRS <- as.numeric(inTotal$PRS)
   assertthat::assert_that(any(is.na(as.numeric(inTotal$PRS))) == FALSE)
-  print(unique(inTotal$PGS_RECORD_ID))
-  assert_that(length(unique(inTotal$subject_type)) == 2)
-  assert_that(all.equal(sort(unique(inTotal$subject_type)), c("case", "control")))
+  assertthat::assert_that(length(unique(inTotal$subject_type)) == 2)
+  assertthat::assert_that(all.equal(sort(unique(inTotal$subject_type)), c("case", "control")))
   inTotal <- tryCatch({
     inTotal$bin_PRS <- -1
     breaksD <- as.numeric(as.character(quantile(as.numeric(inTotal[subject_type == "control",PRS]), probs = seq(0.25, 1, by = 1/inNumBins))))
     seqC <- as.numeric(seq(0.25,1-1/inNumBins, by=1/inNumBins))
     inTotal[,bin_PRS := as.numeric(as.character(cut(as.numeric(PRS), breaks=breaksD, labels=seqC, include.lowest = TRUE, right=TRUE)))]
     inTotal[,bin_PRS := ifelse(is.na(bin_PRS), 1, bin_PRS)]
-    assert_that(nrow(inTotal[bin_PRS == -1,]) == 0)
+    assertthat::assert_that(nrow(inTotal[bin_PRS == -1,]) == 0)
     inTotal
   }, error = function(e){
     ##Default behaviour if inNumBins is not defined
@@ -52,10 +47,10 @@ readScore <- function(inData, inControl, inNumBins=4){
   })
   minBin <- min(as.numeric(inTotal$bin_PRS))
   inTotal[,is_bott := ifelse(bin_PRS == minBin, TRUE,FALSE)]
-  assert_that(length(unique(inTotal[is_bott == TRUE, bin_PRS])) == 1)
-  assert_that(length(unique(inTotal[is_bott == FALSE, bin_PRS])) == (inNumBins-1))
-  assert_that(!(c("0.25") %in% as.character(unique(inTotal[is_bott == FALSE, bin_PRS]))))
-  assert_that(c("0.25") %in% as.character(unique(inTotal[is_bott == TRUE, bin_PRS])))
+  assertthat::assert_that(length(unique(inTotal[is_bott == TRUE, bin_PRS])) == 1)
+  assertthat::assert_that(length(unique(inTotal[is_bott == FALSE, bin_PRS])) == (inNumBins-1))
+  assertthat::assert_that(!(c("0.25") %in% as.character(unique(inTotal[is_bott == FALSE, bin_PRS]))))
+  assertthat::assert_that(c("0.25") %in% as.character(unique(inTotal[is_bott == TRUE, bin_PRS])))
   #assert_that(nrow(unique(inTotal)) == nrow(inTotal))
   inTotal <- unique(inTotal)
   #fwrite(inTotal[bin_PRS == 0.75& subject_type=="case",],paste0("~/quantilePlot/",unique(inTotal$PGS_RECORD_ID), ".csv"))
@@ -83,24 +78,6 @@ getORGLM <- function(inGLMMod){
   return(retFrame)
 }
 
-createGLM <- function(inQuant, inData, inNumBins=4){
-  ##Useless fking function
-  ##Retarded, what was I thinking
-  require(glm2)
-  inData$bin_data <- inData$bin_PRS*inNumBins
-  assertthat::assert_that(unique(c("is_bott", "PRS") %in% colnames(inData)))
-  assertthat::assert_that(length(unique(inData$is_bott)) == 2, msg=paste("Unexpected Values for bottom quantiles with Quantile", inQuant))
-  if(inQuant == 1){
-    assertthat::assert_that(length(unique(inData[bin_data == inQuant | bin_data == 1,bin_data])) == 1)
-  } else {
-    assertthat::assert_that(length(unique(inData[bin_data == inQuant | bin_data == 1,bin_data])) == 2)
-  }
-  print(summary(glm(factor(is_bott) ~ PRS, data=inData[bin_data == inQuant | bin_data == 1,], family="binomial")))
-  print(summary(glm(factor(is_bott) ~ 0+bin_PRS, data=inData, family="binomial")))
-  #browser()
-  #return(list(logitModel = glm(factor(is_bott) ~ PRS, data=inData[bin_data == inQuant | bin_data == 1,], family="binomial"), quant=inQuant))
-}
-
 createTable <- function(inQuant, inData, inNumBins=4){
   inData$bin_data <- inData$bin_PRS*inNumBins
   botData <- inData[bin_data == 1 ,uniqueN(IID), by=.(subject_type, bin_data)]
@@ -109,16 +86,15 @@ createTable <- function(inQuant, inData, inNumBins=4){
   quantData$category <- "quantile"
   contTable <- rbind(botData, quantData)
   if(nrow(contTable[subject_type == "case",])  == 0){
-    nullRow <- data.table(subject_type = c("case", "case"), bin_data
+    nullRow <- data.table::data.table(subject_type = c("case", "case"), bin_data
 = rep(unique(contTable$bin_data),2), V1=c(0, 0),  category=c("z_bottom", "quantile"))
     contTable <- rbind(contTable, nullRow)
     contTable$V1 <- as.numeric(contTable$V1)
   }
-  return(list(contTable=dcast(contTable, subject_type ~ category, value.var="V1", fun.aggregate = sum), quant=inQuant))
+  return(list(contTable=data.table::dcast(contTable, subject_type ~ category, value.var="V1", fun.aggregate = sum), quant=inQuant))
 }
 
 getORContT <- function(inData){
-  require(questionr)
   contTable <- inData$contTable
   contTable$subject_type <- NULL
   contTable <- as.matrix(contTable)
@@ -135,55 +111,50 @@ getORContT <- function(inData){
 }
 
 getQuantilePlot <- function(inData){
-  require(ggplot2)
-  require(cowplot)
   inDate <- "2020-02-17"
   inDir <- paste0("/home/114/sk3015/Analysis/makeGRS/quantilePlot/",inDate)
   #dir.create(inDir, showWarnings=FALSE)
   inFile <- paste0(inDir,"/boxplot.png")
-  theme_set(theme_cowplot())
+  ggplot2::theme_set(cowplot::theme_cowplot())
   png(filename=inFile, width=1920, height=1080)
-  ggplot(data.frame(inData, stringsAsFactors=F), aes(x=splitNo, y=oddsRatio)) +
-  geom_line()+
-  geom_pointrange(aes(ymin=lowerBound, ymax=upperBound))
+  ggplot2::ggplot(data.frame(inData, stringsAsFactors=F), ggplot2::aes(x=splitNo, y=oddsRatio)) +
+  ggplot2::geom_line()+
+  ggplot2::geom_pointrange(ggplot2::aes(ymin=lowerBound, ymax=upperBound))
   dev.off()
 }
 
-totalData <- fread("diseased.csv", stringsAsFactors=F)
-controlData <- fread("control_samples.csv", stringsAsFactors=F)
-lapply(unique(totalData$PGS_RECORD_ID), function(x){
-  #testData <- readScore("~/total_1.csv", "~/plink_missvar.fam")
-  #if(x %in% c("PGS000005", "PGS000007", "PGS000008", "PGS000009", "PGS000016", "PGS000035")){
-  if(x %in% c("PGS000009")){
-  testData <- readScore(totalData[PGS_RECORD_ID == x,], controlData[PGS_RECORD_ID == x,])
-  #print(testData)
-  #inGLMModel <- lapply(1:4, function(x)createGLM(inQuant=x, inData=testData))
-  inContTable <- lapply(1:4, function(x)createTable(inQuant=x, inData=testData))
-  browser()
-  orDF <- do.call("rbind", lapply(inContTable, getORContT))
-  print(orDF)
-  #getQuantilePlot(orDF)
-  #orDF <- do.call("rbind", lapply(inGLMModel, getORGLM))
-  ## Putting outside because R
-  #print(head(orDF))
-  require(ggplot2)
-  require(cowplot)
-  theme_set(theme_cowplot())
-  inDate <- "2020-08-10"
-  inDir <- paste0("~/quantilePlot/",inDate)
-  #dir.create(inDir, showWarnings=FALSE)
-  inFile <- paste0(inDir,"/", x, "-boxplot.png")
+getPlots <- function(inFiles, inRecord){
+  disData <- getAggDf(inFiles, inRecord)
+  controlData <- data.table::fread(system.file("extdata", "control_samples.csv", package="PGSCatalogDownloader"), stringsAsFactors=F)
+  lPLots <- lapply(list(unique(disData$PGS_RECORD_ID)), function(x){
+    scoreData <- readScore(disData[PGS_RECORD_ID == x,], controlData[PGS_RECORD_ID == x,])
+    aggScore <- scoreData 
+    aggScore <- scoreData[subject_type == "case",]
+    aggScore[,risk := ifelse(as.numeric(bin_PRS) <= 0.25, 'Low Risk', ifelse(as.numeric(bin_PRS) > 0.75, "High Risk", "Medium Risk"))]
+    needCols <- c("IID", "risk")
+    needScore <- aggScore[,needCols, with=FALSE]
+    colnames(needScore) <- c("Sample", "Risk")
+    fwrite(needScore, "sample_out.csv")
+    inContTable <- lapply(1:4, function(x)createTable(inQuant=x, inData=scoreData))
+    orDF <- do.call("rbind", lapply(inContTable, getORContT))
+    orDF <- setDT(data.frame(orDF, stringsAsFactors=F))
+    ##ifelse not used in case of factor
+    orDF[,upperBound := ifelse(is.infinite(upperBound), as.numeric(lowerBound), as.numeric(upperBound))]
+    ggplot2::theme_set(cowplot::theme_cowplot())
+    return(ggplot2::ggplot(data.frame(orDF, stringsAsFactors=F), ggplot2::aes(x=splitNo, y=oddsRatio)) +
+    ggplot2::geom_pointrange(ggplot2::aes(ymin=lowerBound, ymax=upperBound)) + ggplot2::ggtitle(x))
+  })
+  return(lPLots)
+}
+
+setPlots <- function(inFiles){
+  allPlots <- getPlots(inFiles$inFile, inFiles$inRecord)
+  inTime <- Sys.time()
+  inDir <- paste0("quantilePlot/")
+  dir.create(inDir, showWarnings=FALSE)
+  inFile <- paste0(inDir, "boxplot.png")
   print(inFile)
-  browser()
-  #theme_set(theme_cowplot())
   #png(filename=inFile, width=1920, height=1080)
- #orDF[1,4] <- 1
- #orDF[2,4] <- 1
- #orDF[3,4] <- 1
- #orDF[4,4] <- 31.33891
- #orDF[4,3] <- 31.33891
-  ggplot(data.frame(orDF, stringsAsFactors=F), aes(x=splitNo, y=oddsRatio)) +
-  geom_pointrange(aes(ymin=lowerBound, ymax=upperBound))
+  ggplot2::ggsave(filename=inFile, plot=cowplot::plot_grid(plotlist=allPlots))
   #dev.off()
-  }
-})
+}

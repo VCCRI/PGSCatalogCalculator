@@ -1,7 +1,6 @@
 getFile <- function(inFile, inRecord){
-  require(data.table)
   if(length(inFile) != 0 & file.exists(inFile)){
-    inData <- fread(inFile, stringsAsFactors=FALSE)
+    inData <- data.table::fread(inFile, stringsAsFactors=FALSE)
     inData[,PGS_RECORD_ID := inRecord]
     #inData[,subject_type := "diseased"]
     return(inData)
@@ -11,9 +10,7 @@ getFile <- function(inFile, inRecord){
 }
 
 getAggDf <- function(inFiles, inRecords){
-  require(data.table)
-
-  totalSamples <- rbindlist(mapply(getFile, inFiles, inRecords))
+  totalSamples <- data.table::rbindlist(mapply(getFile, inFiles, inRecords))
 
   aggSamples <- totalSamples[,sum(as.numeric(SCORESUM)), by=.(IID, PGS_RECORD_ID)]
 

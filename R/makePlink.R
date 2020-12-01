@@ -1,5 +1,6 @@
-getMakePlink <- function(inVCF){
-  inPlink <- "/g/data/jb96/software/plink_1.9_linux_x86_64_20181202/plink"
+getMakePlink <- function(inVCF, inYaml="sample.yaml"){
+  #inPlink <- "/g/data/jb96/software/plink_1.9_linux_x86_64_20181202/plink"
+  inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
   ##ToDO prettifry paste
   if(grepl(".vcf.gz", inVCF)){
     inType <- paste("--vcf", inVCF, "--vcf-half-call h")
@@ -9,8 +10,7 @@ getMakePlink <- function(inVCF){
     outFile <- gsub("\\.bcf", "_plink", inVCF)
  }
   #baseCommand <- paste(inPlink, inType, " --allow-extra-chr --maf 0.05 --mind 0.1 --geno 0.1 --hwe 1e-6 --vcf-filter --make-bed --chr 1-22 XY --memory 4096 --out", outFile)
-  baseCommand <- paste(inPlink, inType, " --allow-extra-chr --mind 0.1 --geno 0.05 --hwe 1e-6 --vcf-filter --make-bed --chr 1-22 XY --memory 4096 --out", outFile)
-  system(command=baseCommand)
+  system2(command=inPlink, args=c(inType, "--allow-extra-chr", "--mind", "0.1", "--geno", "0.05", "--hwe", "1e-6", "--vcf-filter", "--make-bed", "--chr", "1-22 XY", "--memory", "4096","--out", outFile), stdout=FALSE)
   return(outFile)
 }
 
