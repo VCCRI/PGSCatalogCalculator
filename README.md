@@ -3,6 +3,9 @@ A tool that will grab PGS Catalog Data and allow for automatic scoring of sample
 Required Software:
 * R - 3.6.1
 * Python - 2.7.16
+* VT
+* Bcftools
+* PLINK 1.9
 
 Sample Run
 ```
