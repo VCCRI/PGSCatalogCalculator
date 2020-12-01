@@ -1,10 +1,8 @@
-baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL){
+baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inCL){
   dir.create(outFile, showWarnings=FALSE)
   chrom <- c(as.character(1:22), "X", "Y")
   #chrom <- c(as.character(2:22), "X", "Y")
   #chrom <- c(as.character(1))
-  cl <- parallel::makeCluster(3)
-  doParallel::registerDoParallel(cl)
   inDBN <- foreach::foreach(inChrom=chrom, .export = c("baseIndex")) %dopar% {
     filtSNP <- gsub("\\.[a-zA-Z']+(\\.gz)?$", paste0("_",inChrom, "_snp", ".vcf.gz"), inVCF)
     #filtSNP <- gsub("\\.bcf", paste0("_",inChrom, "_snp", ".vcf.gz"), inVCF)
@@ -28,7 +26,6 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL){
     
     return(inDBN)
   }
-  parallel::stopCluster(cl)
   return(inDBN)
 }
 
