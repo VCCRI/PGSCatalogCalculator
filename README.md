@@ -6,7 +6,10 @@ Required Software:
 
 Sample Run
 ```
-grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073')
+cl <- parallel::makeCluster(10)
+doParallel::registerDoParallel(cl)
+grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl)
+parallel::stopCluster(cl)
 ```
 
 The tool will generate a boxplot, quantile/boxplot.png, and CSV,sample_out.csv. These can be viewed concurrently by accessing dashboard.Rmd
