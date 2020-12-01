@@ -11,7 +11,7 @@ Sample Run
 ```
 python2 -m pip install -r https://raw.githubusercontent.com/VCCRI/PGSCatalogDownloader/master/requirements.txt
 R
-devtools::install("VCCRI/PGSCatalogDownloader")
+devtools::install_github("VCCRI/PGSCatalogDownloader")
 require(PGSCatalogDownloader)
 cl <- parallel::makeCluster(10)
 doParallel::registerDoParallel(cl)
