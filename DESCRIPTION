@@ -1,0 +1,36 @@
+Package: PGSCatalogDownloader
+Title: Downloads Scores From PGS Catalog
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Shannon",
+           family = "Kwan",
+           role = c("aut", "cre"),
+           email = "s.kwan@victorchang.edu.au",
+           )
+Description: Downloads Scores from PGS Catalog and compares against sample scores
+License: `use_mit_license()`
+Depends: 
+    R (>= 3.6.1)
+Imports: 
+    assertthat,
+    cowplot,
+    data.table (>= 1.9.8),
+    doParallel,
+    doSNOW,
+    snow,
+    foreach,
+    ggplot2,
+    glm2,
+    httr,
+    promises,
+    questionr,
+    iterators,
+    RCurl,
+    readxl,
+    yaml,
+    withr,
+    future
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
