@@ -331,7 +331,8 @@ getAllScores <- function(inDir){
   return(aggSamples)
 }
 
-grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml"){
+#' @export
+grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL){
   if (!(is.null(inPGSIDS))){
     # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
     file <- data.table::fread(inPGSIDS, stringsAsFactors=F, header=F)
@@ -342,9 +343,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
     print("Calculating all Scores")
     file <- NA
   }
-  future::plan("multiprocess", workers=6)
   inspecFile <- readRDS(url("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS", "rb"))
-
   normFile <- 
     baseNorm(inVCF=inFile,
            inRef=inRef,
@@ -358,8 +357,6 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
      scoreFiles <- lapply(inputFile, function(inObjec){
       scoreFiles <- data.table::data.table() 
       if(inObjec@`pgsId` %in% file | is.na(file)){
-        cl <- parallel::makeCluster(10)
-        doParallel::registerDoParallel(cl)
         scoreFiles <- foreach::foreach(d=iterators::iter(unlist(normFile)), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
           if(getPGSType(inObjec) == "rsID"){
            scoreFile <- runGRSCalc(inObjec, d)
@@ -369,7 +366,6 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
           }
       }
-        parallel::stopCluster(cl)
       }
       return(scoreFiles)
     })
