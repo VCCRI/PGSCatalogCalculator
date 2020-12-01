@@ -331,6 +331,7 @@ getAllScores <- function(inDir){
   return(aggSamples)
 }
 
+#' @export
 grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml"){
   if (!(is.null(inPGSIDS))){
     # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
