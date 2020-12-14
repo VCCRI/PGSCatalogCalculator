@@ -28,13 +28,15 @@ require(PGSCatalogDownloader)
 cl <- parallel::makeCluster(10)
 doParallel::registerDoParallel(cl)
 grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl)
-# inFile = Input Case VCF
-# inRef = Reference Sequence Fasta File
-# inPGSID = PGS ID that you want to calculate the score for
-# inPGSIDS = File that has newline seperated list of PGS IDs that you want to calculate the score for
-# cl = Cluster that will be used to run the package
 parallel::stopCluster(cl)
 ```
+## Input Parameters for grabScoreID
+
+* inFile = Input Case VCF
+* inRef = Reference Sequence FASTA File
+* inPGSID = PGS ID that you want to calculate the score for
+* inPGSIDS = File that has newline separated list of PGS IDs that you want to calculate the score for
+* cl = Cluster that will be used to run the package
 
 Please note that package looks for "sample.yaml" file in the current working directory to ensure that it references the correct packages and environment variables
 
