@@ -123,9 +123,14 @@ getQuantilePlot <- function(inData){
   dev.off()
 }
 
-getPlots <- function(inFiles, inRecord){
+getPlots <- function(inFiles, inRecord, inControl){
   disData <- getAggDf(inFiles, inRecord)
-  controlData <- data.table::fread(system.file("extdata", "control_samples.csv", package="PGSCatalogDownloader"), stringsAsFactors=F)
+  browser()
+  if(is.null(inControl)){
+    controlData <- data.table::fread(system.file("extdata", "control_samples.csv", package="PGSCatalogDownloader"), stringsAsFactors=F)
+  } else {
+    controlData <- inControl
+  }
   lPLots <- lapply(list(unique(disData$PGS_RECORD_ID)), function(x){
     scoreData <- readScore(disData[PGS_RECORD_ID == x,], controlData[PGS_RECORD_ID == x,])
     aggScore <- scoreData 
@@ -147,8 +152,8 @@ getPlots <- function(inFiles, inRecord){
   return(lPLots)
 }
 
-setPlots <- function(inFiles){
-  allPlots <- getPlots(inFiles$inFile, inFiles$inRecord)
+setPlots <- function(inFiles, inControl=NULL){
+  allPlots <- getPlots(inFiles$inFile, inFiles$inRecord, inControl)
   inTime <- Sys.time()
   inDir <- paste0("quantilePlot/")
   dir.create(inDir, showWarnings=FALSE)
