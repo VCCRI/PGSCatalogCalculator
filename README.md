@@ -18,16 +18,17 @@ devtools::install_github("VCCRI/PGSCatalogDownloader")
 
 ## Required Files 
 
-* Input VCF (Case - Required, Control - Optional, can provide your own)
+* Input VCF (Case - Required)
 * Reference Sequence Fasta File
 * Filled in sample.yaml, file used to point package to relevant prerequisites
+* Optional - Control VCF File
 
 ## Sample Run
 ```
 require(PGSCatalogDownloader)
 cl <- parallel::makeCluster(10)
 doParallel::registerDoParallel(cl)
-grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl)
+grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl, inControl='sample.vcf.gz'
 parallel::stopCluster(cl)
 ```
 ## Input Parameters for grabScoreID
@@ -36,7 +37,8 @@ parallel::stopCluster(cl)
 * inRef = Reference Sequence FASTA File
 * inPGSID = PGS ID that you want to calculate the score for
 * inPGSIDS = File that has newline separated list of PGS IDs that you want to calculate the score for
-* cl = Cluster that will be used to run the package
+* inCL = Cluster that will be used to run the package
+* inControl = Control VCF (Optional)
 
 Please note that package looks for "sample.yaml" file in the current working directory to ensure that it references the correct packages and environment variables
 
@@ -44,7 +46,7 @@ Please find an example file in this repo: https://github.com/VCCRI/PGSCatalogDow
 
 ## Output
 
-The tool will generate a boxplot, `quantile/boxplot.png`, and CSV that displays the relative risk of patient,`sample_out.csv`. 
+The tool will generate a boxplot, `quantile/boxplot.png`, and CSV that displays the relative risk of patient and raw scores,`sample_out.csv`
 
 These can be viewed concurrently by accessing `dashboard.Rmd`
 
