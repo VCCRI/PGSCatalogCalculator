@@ -332,7 +332,52 @@ getAllScores <- function(inDir){
 }
 
 #' @export
-grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL){
+grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL){
+  if (!(is.null(inPGSIDS))){
+    # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
+    file <- data.table::fread(inPGSIDS, stringsAsFactors=F, header=F)
+    file <- file$V1
+  } else if(!(is.null(inPGSID))) {
+    file <- inPGSID
+  } else {
+    print("CalculnReating all Scores")
+    file <- NA
+  }
+  inspecFile <- readRDS(url("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS", "rb"))
+  normFile <- 
+    baseNorm(inVCF=inControl,
+           inRef=inRef,
+           outFile=gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", inControl),
+           inYaml=inYamlFile)
+
+  ##while(!(resolved(inspecFile) & resolved(normFile))) {}
+     ## Need to fix ID
+     #normFile <- future::value(normFile)
+     inputFile <- inspecFile
+     scoreFiles <- lapply(inputFile, function(inObjec){
+      scoreFiles <- data.table::data.table() 
+      if(inObjec@`pgsId` %in% file | is.na(file)){
+        scoreFiles <- foreach::foreach(d=iterators::iter(unlist(normFile)), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
+         if(getPGSType(inObjec) == "rsID"){
+           scoreFile <- runGRSCalc(inObjec, d)
+           return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
+          } else {
+           scoreFile <- runGRSCalcChrPos(inObjec, d)
+           return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
+          }
+      }
+      }
+      return(scoreFiles)
+    })
+
+    scoreFiles <- rbindlist(scoreFiles)
+    controlDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
+    browser()
+    return(controlDat)
+  
+}
+#' @export
+grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL){
   if (!(is.null(inPGSIDS))){
     # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
     file <- data.table::fread(inPGSIDS, stringsAsFactors=F, header=F)
@@ -369,6 +414,9 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
       }
       return(scoreFiles)
     })
- setPlots(rbindlist(scoreFiles))
+  if(!(is.null(inControl))){
+    controlData <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl)
+  }
+ setPlots(rbindlist(scoreFiles), controlData)
  
 }
