@@ -125,7 +125,6 @@ getQuantilePlot <- function(inData){
 
 getPlots <- function(inFiles, inRecord, inControl){
   disData <- getAggDf(inFiles, inRecord)
-  browser()
   if(is.null(inControl)){
     controlData <- data.table::fread(system.file("extdata", "control_samples.csv", package="PGSCatalogDownloader"), stringsAsFactors=F)
   } else {
@@ -133,12 +132,17 @@ getPlots <- function(inFiles, inRecord, inControl){
   }
   lPLots <- lapply(list(unique(disData$PGS_RECORD_ID)), function(x){
     scoreData <- readScore(disData[PGS_RECORD_ID == x,], controlData[PGS_RECORD_ID == x,])
+    scoreData[,risk := ifelse(as.numeric(bin_PRS) <= 0.25, 'Low Risk', ifelse(as.numeric(bin_PRS) > 0.75, "High Risk", "Medium Risk"))]
     aggScore <- scoreData 
     aggScore <- scoreData[subject_type == "case",]
-    aggScore[,risk := ifelse(as.numeric(bin_PRS) <= 0.25, 'Low Risk', ifelse(as.numeric(bin_PRS) > 0.75, "High Risk", "Medium Risk"))]
-    needCols <- c("IID", "risk")
-    needScore <- aggScore[,needCols, with=FALSE]
-    colnames(needScore) <- c("Sample", "Risk")
+    needCols <- c("IID", "PRS","risk")
+    if(is.null(inControl)){
+      needScore <- aggScore[,needCols, with=FALSE]
+    } else {
+      needCols <- c("IID", "subject_type","PRS","risk")
+      needScore <- scoreData[,needCols, with=FALSE]
+      colnames(needScore) <- c("Sample", "Subject Type", "PRS","Risk")
+    }
     fwrite(needScore, "sample_out.csv")
     inContTable <- lapply(1:4, function(x)createTable(inQuant=x, inData=scoreData))
     orDF <- do.call("rbind", lapply(inContTable, getORContT))

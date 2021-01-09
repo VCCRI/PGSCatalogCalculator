@@ -372,7 +372,6 @@ grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile
 
     scoreFiles <- rbindlist(scoreFiles)
     controlDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
-    browser()
     return(controlDat)
   
 }
@@ -415,8 +414,8 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
       return(scoreFiles)
     })
   if(!(is.null(inControl))){
-    controlData <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl)
+    inControl <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl)
   }
- setPlots(rbindlist(scoreFiles), controlData)
+ setPlots(rbindlist(scoreFiles), inControl)
  
 }
