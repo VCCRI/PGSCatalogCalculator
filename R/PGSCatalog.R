@@ -343,7 +343,9 @@ grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile
     print("CalculnReating all Scores")
     file <- NA
   }
-  inspecFile <- readRDS(url("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS", "rb"))
+  inspecTemp <- tempfile()
+  inspecD <- download.file("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS",destfile=inspecTemp, method="wget", mode="rb")
+  inspecFile <- readRDS(inspecTemp)
   normFile <- 
     baseNorm(inVCF=inControl,
            inRef=inRef,
@@ -387,7 +389,9 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
     print("Calculating all Scores")
     file <- NA
   }
-  inspecFile <- readRDS(url("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS", "rb"))
+  inspecTemp <- tempfile()
+  inspecD <- download.file("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS",destfile=inspecTemp, method="wget", mode="rb")
+  inspecFile <- readRDS(inspecTemp)
   normFile <- 
     baseNorm(inVCF=inFile,
            inRef=inRef,
