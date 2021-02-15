@@ -332,7 +332,7 @@ getAllScores <- function(inDir){
 }
 
 #' @export
-grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL){
+grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inRDS=NULL){
   if (!(is.null(inPGSIDS))){
     # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
     file <- data.table::fread(inPGSIDS, stringsAsFactors=F, header=F)
@@ -343,9 +343,7 @@ grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile
     print("CalculnReating all Scores")
     file <- NA
   }
-  inspecTemp <- tempfile()
-  inspecD <- download.file("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS",destfile=inspecTemp, method="wget", mode="rb")
-  inspecFile <- readRDS(inspecTemp)
+  inspecFile <- inRDS
   normFile <- 
     baseNorm(inVCF=inControl,
            inRef=inRef,
@@ -377,8 +375,31 @@ grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile
     return(controlDat)
   
 }
+checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.yaml", controlVCF=NULL){
+  inCheck <- list(inputFile, inputRef, yamlFile, controlVCF)
+  inFiles <- unlist(lapply(inCheck, function(x){
+           return(!file.exists(x))
+  }))
+  if(length(inCheck[inFiles]) >= 1){
+    stop(paste(inCheck[inFiles], "does not exist"))
+  }
+  if(Sys.which(yaml::read_yaml(yamlFile)$bcftools) == ""){
+    stop("Please specify bcftools location in sample.yaml file in current directory")
+  }
+
+  if(Sys.which(yaml::read_yaml(yamlFile)$vt) == ""){
+    stop("Please specify vt location in sample.yaml file in current directory")
+  }
+
+  if(Sys.which(yaml::read_yaml(yamlFile)$plink) == ""){
+    stop("Please specify plink location in sample.yaml file in current directory")
+  }
+}
+
+  
 #' @export
 grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL){
+  checkFilesExist(inputFile=inFile, inputRef=inRef, yamlFile=inYamlFile, controlVCF=inControl)
   if (!(is.null(inPGSIDS))){
     # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
     file <- data.table::fread(inPGSIDS, stringsAsFactors=F, header=F)
@@ -418,7 +439,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
       return(scoreFiles)
     })
   if(!(is.null(inControl))){
-    inControl <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl)
+    inControl <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl,inRDS=inspecFile)
   }
  setPlots(rbindlist(scoreFiles), inControl)
  
