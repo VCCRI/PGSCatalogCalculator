@@ -44,9 +44,11 @@ Please note that package looks for "sample.yaml" file in the current working dir
 
 Please find an example file in this repo: https://github.com/VCCRI/PGSCatalogDownloader/blob/master/sample.yaml
 
+Please note that this tools creates intermediate files, error messages relating to these intermediate files should be ignored
+
 ## Output
 
-The tool will generate a boxplot, `quantile/boxplot.png`, and CSV that displays the relative risk of patient and raw scores,`sample_out.csv`
+The tool will generate a boxplot, `quantilePlot/boxplot.png`, and CSV that displays the relative risk of patient and raw scores,`sample_out.csv`
 
 These can be viewed concurrently by accessing `dashboard.Rmd`
 

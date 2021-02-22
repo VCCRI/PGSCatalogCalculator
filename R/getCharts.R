@@ -65,14 +65,14 @@ getORGLM <- function(inGLMMod){
       oddsR <- questionr::odds.ratio(inGLM, level=0.95)
       assertthat::assert_that(length(oddsR$OR) == 2)
       assertthat::assert_that(is.numeric(inQuant))
-      retFrame <- cbind(splitNo=inQuant, lowerBound=oddsR$`2.5 %`[2], oddsRatio=oddsR$OR[2], upperBound=oddsR$`97.5 %`[2])
+      retFrame <- cbind(quantile=inQuant, lowerBound=oddsR$`2.5 %`[2], oddsRatio=oddsR$OR[2], upperBound=oddsR$`97.5 %`[2])
     }, error = function(e){
       inORs <- exp(summary(inGLM)$coefficients["PRS",1] +
        qnorm(c(0.025,0.5,0.975)) * summary(inGLM)$coefficients["PRS",2])
-      retFrame <- cbind(splitNo=inQuant, lowerBound=inORs[1], oddsRatio=inORs[2], upperBound=inORs[3])
+      retFrame <- cbind(quantile=inQuant, lowerBound=inORs[1], oddsRatio=inORs[2], upperBound=inORs[3])
     })
   } else {
-    retFrame <- cbind(splitNo=inQuant, lowerBound=1, oddsRatio=1, upperBound=1)
+    retFrame <- cbind(quantile=inQuant, lowerBound=1, oddsRatio=1, upperBound=1)
   }
   # No DT because of doubles
   return(retFrame)
@@ -103,9 +103,9 @@ getORContT <- function(inData){
     oddsR <- questionr::odds.ratio(contTable, level=0.95)
     assertthat::assert_that(length(oddsR$OR) == 1)
     assertthat::assert_that(is.numeric(inQuant))
-    retFrame <- cbind(splitNo=inQuant, lowerBound=oddsR$`2.5 %`[1], oddsRatio=oddsR$OR[1], upperBound=oddsR$`97.5 %`[1])
+    retFrame <- cbind(quantile=inQuant, lowerBound=oddsR$`2.5 %`[1], oddsRatio=oddsR$OR[1], upperBound=oddsR$`97.5 %`[1])
   } else {
-    retFrame <- cbind(splitNo=inQuant, lowerBound=1, oddsRatio=1, upperBound=1)
+    retFrame <- cbind(quantile=inQuant, lowerBound=1, oddsRatio=1, upperBound=1)
   }
   return(retFrame)
 }
@@ -117,7 +117,7 @@ getQuantilePlot <- function(inData){
   inFile <- paste0(inDir,"/boxplot.png")
   ggplot2::theme_set(cowplot::theme_cowplot())
   png(filename=inFile, width=1920, height=1080)
-  ggplot2::ggplot(data.frame(inData, stringsAsFactors=F), ggplot2::aes(x=splitNo, y=oddsRatio)) +
+  ggplot2::ggplot(data.frame(inData, stringsAsFactors=F), ggplot2::aes(x=quantile, y=oddsRatio)) +
   ggplot2::geom_line()+
   ggplot2::geom_pointrange(ggplot2::aes(ymin=lowerBound, ymax=upperBound))
   dev.off()
@@ -150,7 +150,7 @@ getPlots <- function(inFiles, inRecord, inControl){
     ##ifelse not used in case of factor
     orDF[,upperBound := ifelse(is.infinite(upperBound), as.numeric(lowerBound), as.numeric(upperBound))]
     ggplot2::theme_set(cowplot::theme_cowplot())
-    return(ggplot2::ggplot(data.frame(orDF, stringsAsFactors=F), ggplot2::aes(x=splitNo, y=oddsRatio)) +
+    return(ggplot2::ggplot(data.frame(orDF, stringsAsFactors=F), ggplot2::aes(x=quantile, y=oddsRatio)) +
     ggplot2::geom_pointrange(ggplot2::aes(ymin=lowerBound, ymax=upperBound)) + ggplot2::ggtitle(x))
   })
   return(lPLots)
