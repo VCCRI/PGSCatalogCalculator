@@ -35,11 +35,13 @@ getPGSMeta <- function(inFile){
   ,"Publication (PMID)"
   ,"Publication (doi)"
   ,"Score and results match the original publication"
+  ,"FTP link"
+  ,"License/Terms of Use"
   )
-  assertthat::assert_that(ncol(inData) == 14)
+  assertthat::assert_that(ncol(inData) == 16)
   assertthat::assert_that(all.equal(colnames(inData), needCols))
   ##Generate FTP URL
-  inData[,ftp_link := paste0("http://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/", `Polygenic Score (PGS) ID`, "/ScoringFiles/", `Polygenic Score (PGS) ID`, ".txt.gz")]
+  inData[,ftp_link := `FTP link`]
   return(inData)
 }
 
@@ -48,7 +50,7 @@ getRTmpFiles <- function(){
   #x <- getURL(URL)
   #return(rawConnection(x))
   tempFile <- tempfile()
-  inTemp <- download.file(URL, destfile=tempFile, mode='wb', method="libcurl")
+  inTemp <- download.file(URL, destfile=tempFile, mode='wb', method="wget")
   print("Downloaded File")
   return(tempFile)
 }
@@ -92,12 +94,14 @@ getPGSFiles <- function(inData){
   #assertthat::assert_that("data.table" %in% class(inData))
   #assertthat::assert_that(is.recursive(inData) == FALSE)
   inFileURL <- getElement(inData, "ftp_link")
+  pgsId <- NULL
   pgsId <- getElement(inData, "Polygenic Score (PGS) ID")
   response <- httr::HEAD(inFileURL)
   assertthat::assert_that(length(inFileURL) == 1)
+  tempFile <- NULL
   tempFile <- tempfile()
   print("Start File")
-  inTemp <- download.file(inFileURL, destfile=tempFile, mode='wb', quiet=T)
+  inTemp <- download.file(inFileURL, destfile=tempFile, mode='wb', quiet=T,method="wget")
   print("Downloading File")
   return(list(file=tempFile, pgsId=pgsId))
 }
@@ -171,9 +175,11 @@ getEUFiles <- function(){
   cl <- parallel::makeCluster(4)
   doParallel::registerDoParallel(cl)
   retFiles <- foreach::foreach(d=iterators::iter(ftpLinks, by='row'), .export = c("getPGSFiles", "pgsGRS", "setClassPGSGRS"), .packages=c("data.table", "httr", "assertthat")) %dopar% {
+  #retFiles <- apply(ftpLinks, 1, function(d){
     inFile <- getPGSFiles(d)
     setClassPGSGRS()
     inClass <- pgsGRS(inFile)
+  #})
   }
   ftpFiles <-  do.call("rbind", apply(ftpLinks, 1, getPGSFiles))
   parallel::stopCluster(cl)
@@ -292,13 +298,14 @@ runGRSCalc <- function(inObjec, inFile, inYaml){
   grsFile <- getGRSInputRsID(inObjec)
   rsIDFile <- getRSIds(inObjec)
   pgsID <- getPGSId(inObjec)
-  print(inFile)
   filterRsid <- filterMerged(inFile=inFile, inName=pgsID, inSNPs=rsIDFile)
   filterMerged <- filterMergedPos(inFile=filterRsid, inName=pgsID, inSNPs=grsFile)
   plinkFile <- getMakePlink(inVCF=filterMerged)
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile)
-  system(command=paste("rm", filterMerged))
-  system(command=paste("rm", filterRsid))
+  system(command=paste0("rm ", filterMerged, "*"))
+  system(command=paste0("rm ", inFile, "*"))
+  system(command=paste0("rm ", filterRsid,"*"))
+  system(command=paste0("rm ", plinkFile,"*"))
   return(outScore)
 }
 
@@ -309,7 +316,10 @@ runGRSCalcChrPos <- function(inObjec, inFile, inYaml){
   filterMerged <- filterMergedPos(inFile=inFile, inName=pgsID, inSNPs=grsFile)
   plinkFile <- getMakePlink(inVCF=filterMerged)
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile)
-  system(command=paste("rm", filterMerged))
+  system(command=paste0("rm ", filterMerged, "*"))
+  system(command=paste0("rm ", inFile, "*"))
+  system(command=paste0("rm ", filterRsid,"*"))
+  system(command=paste0("rm ", plinkFile,"*"))
   return(outScore)
 }
 
@@ -340,14 +350,15 @@ grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile
   } else if(!(is.null(inPGSID))) {
     file <- inPGSID
   } else {
-    print("CalculnReating all Scores")
+    print("Calculating all Scores")
     file <- NA
   }
   inspecFile <- inRDS
+  outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inControl) else yaml::read_yaml(inYamlFile)$outputDir
   normFile <- 
     baseNorm(inVCF=inControl,
            inRef=inRef,
-           outFile=gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", inControl),
+           outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inControl)), sep="/"),
            inYaml=inYamlFile)
 
   ##while(!(resolved(inspecFile) & resolved(normFile))) {}
@@ -413,10 +424,11 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   inspecTemp <- tempfile()
   inspecD <- download.file("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS",destfile=inspecTemp, method="wget", mode="rb")
   inspecFile <- readRDS(inspecTemp)
+  outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inFile) else gsub("\\/$", "",yaml::read_yaml(inYamlFile)$outputDir)
   normFile <- 
     baseNorm(inVCF=inFile,
            inRef=inRef,
-           outFile=gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", inFile),
+           outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inFile)),sep="/"),
            inYaml=inYamlFile)
 
   ##while(!(resolved(inspecFile) & resolved(normFile))) {}
@@ -441,6 +453,6 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   if(!(is.null(inControl))){
     inControl <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl,inRDS=inspecFile)
   }
- setPlots(rbindlist(scoreFiles), inControl)
+ setPlots(rbindlist(scoreFiles), inControl, inOutDir=outDir)
  
 }

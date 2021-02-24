@@ -1,3 +1,4 @@
 bcftools: bcftools
 vt: /g/data3/jb96/software/vt/vt
 plink: /g/data/jb96/software/plink_1.9_linux_x86_64_20181202/plink
+outputDir: /home/usr/pgs_run/output_tool

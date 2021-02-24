@@ -123,7 +123,7 @@ getQuantilePlot <- function(inData){
   dev.off()
 }
 
-getPlots <- function(inFiles, inRecord, inControl){
+getPlots <- function(inFiles, inRecord, inControl, inOutDir=NULL){
   disData <- getAggDf(inFiles, inRecord)
   if(is.null(inControl)){
     controlData <- data.table::fread(system.file("extdata", "control_samples.csv", package="PGSCatalogDownloader"), stringsAsFactors=F)
@@ -143,7 +143,7 @@ getPlots <- function(inFiles, inRecord, inControl){
       needScore <- scoreData[,needCols, with=FALSE]
       colnames(needScore) <- c("Sample", "Subject Type", "PRS","Risk")
     }
-    fwrite(needScore, "sample_out.csv")
+    fwrite(needScore, paste(inOutDir, "sample_out.csv", sep="/"))
     inContTable <- lapply(1:4, function(x)createTable(inQuant=x, inData=scoreData))
     orDF <- do.call("rbind", lapply(inContTable, getORContT))
     orDF <- setDT(data.frame(orDF, stringsAsFactors=F))
@@ -156,12 +156,10 @@ getPlots <- function(inFiles, inRecord, inControl){
   return(lPLots)
 }
 
-setPlots <- function(inFiles, inControl=NULL){
-  allPlots <- getPlots(inFiles$inFile, inFiles$inRecord, inControl)
+setPlots <- function(inFiles, inControl=NULL, inOutDir=NULL){
+  allPlots <- getPlots(inFiles$inFile, inFiles$inRecord, inControl,inOutDir)
   inTime <- Sys.time()
-  inDir <- paste0("quantilePlot/")
-  dir.create(inDir, showWarnings=FALSE)
-  inFile <- paste0(inDir, "boxplot.png")
+  inFile <- paste(inOutDir, "boxplot.png", sep="/")
   print(inFile)
   #png(filename=inFile, width=1920, height=1080)
   ggplot2::ggsave(filename=inFile, plot=cowplot::plot_grid(plotlist=allPlots))
