@@ -44,7 +44,7 @@ Please note that package looks for "sample.yaml" file in the current working dir
 
 Please find an example file in this repo: https://github.com/VCCRI/PGSCatalogDownloader/blob/master/sample.yaml
 
-Please define the output directory in the YAML file otherwise the tool will output files in the current R working directory
+Please define the output directory in the YAML file under outputDir otherwise the tool will output files in the current R working directory
 
 Please note that this tools creates intermediate files, error messages relating to these intermediate files should be ignored
 
