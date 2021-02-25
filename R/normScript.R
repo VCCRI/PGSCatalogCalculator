@@ -1,5 +1,4 @@
 baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inCL){
-  print(outFile)
   dir.create(dirname(outFile), showWarnings=FALSE)
   chrom <- c(as.character(1:22), "X", "Y")
   #chrom <- c(as.character(2:22), "X", "Y")
@@ -30,11 +29,15 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inCL){
     if(!(file.exists(inDecomBlock))){
        stop("Cannot access file to decompose blocksub")
     }
+    system2(command="rm", args=c(inDecom))
+    system2(command="rm", args=c(paste0(inDecom, ".csi")))
     baseIndex(inDecomBlock, inYaml)
     invisible(capture.output(system2(command=baseCommand, args=c("normalize", "-r", inRef, "-o", inDBN, inDecomBlock, "-q"), stdout=FALSE)))
     if(!(file.exists(inDBN))){
        stop("Cannot access file outputted from normalisatiion")
     }
+    system2(command="rm", args=c(inDecomBlock))
+    system2(command="rm", args=c(paste0(inDecomBlock, ".csi")))
     baseIndex(inDBN, inYaml)
     
     return(inDBN)
