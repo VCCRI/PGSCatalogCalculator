@@ -25,6 +25,7 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inCL){
     }
     #filterSNP <- system(command=paste('bcftools view', inVCF, '-r', inChrom, '-O z -o', filtSNP, '--threads 2'))
     baseIndex(inDecom, inYaml)
+    file.remove(filtSNP)
     invisible(capture.output(system2(command=baseCommand, args=c("decompose_blocksub", "-o", inDecomBlock, "-a", inDecom), stdout=FALSE)))
     if(!(file.exists(inDecomBlock))){
        stop("Cannot access file to decompose blocksub")

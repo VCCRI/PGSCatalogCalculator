@@ -5,7 +5,7 @@ plinkGRS <- function(inFile, inGRS, inYaml="sample.yaml"){
   ##TODO prettifry paste
   system2(command=inPlink, args=c("--memory","2048","--bfile", inFile,"--double-id", "--allow-no-sex", "--score", inGRS, "header", "sum", "--out", outFile),stdout=FALSE)
   if (file.exists(paste0(outFile, ".log"))) file.remove(paste0(outFile, ".log"))
-  if (file.exists(file.remove(paste0(outFile, ".nosex")))) file.remove(paste0(outFile, ".nosex"))
+  if (file.exists(paste0(outFile, ".nosex"))) file.remove(paste0(outFile, ".nosex"))
   outFile <- paste0(outFile, ".profile")
   return(outFile)
 }

@@ -406,6 +406,9 @@ checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.ya
   if(Sys.which(yaml::read_yaml(yamlFile)$plink) == ""){
     stop("Please specify plink location in sample.yaml file in current directory")
   }
+  if(is.null(yaml::read_yaml(yamlFile)$outputDir)){
+    print("No Output Dir Specified")
+  }
 }
 
   
