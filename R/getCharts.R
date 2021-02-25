@@ -123,8 +123,8 @@ getQuantilePlot <- function(inData){
   dev.off()
 }
 
-getPlots <- function(inFiles, inRecord, inControl, inOutDir=NULL){
-  disData <- getAggDf(inFiles, inRecord)
+getPlots <- function(inDis, inControl, inOutDir=NULL){
+  disData <- inDis
   if(is.null(inControl)){
     controlData <- data.table::fread(system.file("extdata", "control_samples.csv", package="PGSCatalogDownloader"), stringsAsFactors=F)
   } else {
@@ -156,11 +156,11 @@ getPlots <- function(inFiles, inRecord, inControl, inOutDir=NULL){
   return(lPLots)
 }
 
-setPlots <- function(inFiles, inControl=NULL, inOutDir=NULL){
-  allPlots <- getPlots(inFiles$inFile, inFiles$inRecord, inControl,inOutDir)
+setPlots <- function(inDis, inControl=NULL, inOutDir=NULL){
+  #allPlots <- getPlots(inFiles$inFile, inFiles$inRecord, inControl,inOutDir)
+  allPlots <- getPlots(inDis, inControl, inOutDir)
   inTime <- Sys.time()
   inFile <- paste(inOutDir, "boxplot.png", sep="/")
-  print(inFile)
   #png(filename=inFile, width=1920, height=1080)
   ggplot2::ggsave(filename=inFile, plot=cowplot::plot_grid(plotlist=allPlots))
   #dev.off()

@@ -383,6 +383,7 @@ grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile
 
     scoreFiles <- rbindlist(scoreFiles)
     controlDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
+    lapply(scoreFiles$inFile, function(x)if(file.exists(x)) file.remove(x))
     return(controlDat)
   
 }
@@ -450,9 +451,12 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
       }
       return(scoreFiles)
     })
+  scoreFiles <- rbindlist(scoreFiles)
+  scoreDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
   if(!(is.null(inControl))){
     inControl <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl,inRDS=inspecFile)
   }
- setPlots(rbindlist(scoreFiles), inControl, inOutDir=outDir)
+ lapply(scoreFiles$inFile, function(x)if(file.exists(x)) file.remove(x))
+ setPlots(scoreDat, inControl, inOutDir=outDir)
  
 }

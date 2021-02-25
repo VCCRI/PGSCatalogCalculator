@@ -11,7 +11,6 @@ getFile <- function(inFile, inRecord){
 
 getAggDf <- function(inFiles, inRecords){
   totalSamples <- data.table::rbindlist(mapply(getFile, inFiles, inRecords))
-
   aggSamples <- totalSamples[,sum(as.numeric(SCORESUM)), by=.(IID, PGS_RECORD_ID)]
 
   setnames(aggSamples, "V1", "PRS")
