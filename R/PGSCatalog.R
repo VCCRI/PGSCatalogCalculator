@@ -388,10 +388,13 @@ grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile
   
 }
 checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.yaml", controlVCF=NULL){
-  inCheck <- list(inputFile, inputRef, yamlFile, controlVCF)
+  inCheck <- list(inputFile, inputRef, yamlFile)
   inFiles <- unlist(lapply(inCheck, function(x){
            return(!file.exists(x))
   }))
+  if(!(is.null(controlVCF))){
+       if(!(file.exists(controlVCF))) stop("Control VCF not found")
+  }
   if(length(inCheck[inFiles]) >= 1){
     stop(paste(inCheck[inFiles], "does not exist"))
   }
