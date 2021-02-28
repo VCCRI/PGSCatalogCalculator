@@ -14,7 +14,12 @@ Installation
 python2 -m pip install -r https://raw.githubusercontent.com/VCCRI/PGSCatalogDownloader/master/requirements.txt
 R
 devtools::install_github("VCCRI/PGSCatalogDownloader")
+# Installing local mirror of metadata
+require(PGSCatalogDownloader)
+inMeta <- getLatestMeta("meta.RDS") 
+# If getLatestMeta function input is NULL it will save in the temporary directory
 ```
+getLatestMeta will always return the filename location of the local mirror
 
 ## Required Files 
 
@@ -28,7 +33,7 @@ devtools::install_github("VCCRI/PGSCatalogDownloader")
 require(PGSCatalogDownloader)
 cl <- parallel::makeCluster(10)
 doParallel::registerDoParallel(cl)
-grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl, inControl='sample.vcf.gz', inMeta='meta.RDS')
+grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl, inControl='sample.vcf.gz', inMeta=inMeta)
 parallel::stopCluster(cl)
 ```
 ## Input Parameters for grabScoreID
@@ -39,7 +44,7 @@ parallel::stopCluster(cl)
 * inPGSIDS = File that has newline separated list of PGS IDs that you want to calculate the score for
 * inCL = Cluster that will be used to run the package
 * inControl = Control VCF (Optional)
-* inMeta = Local Mirror of metadata that allows for reuse
+* inMeta = Local Mirror of metadata that allows for reuse (Optional)
 
 Please note that package looks for "sample.yaml" file in the current working directory to ensure that it references the correct packages and environment variables
 
