@@ -318,7 +318,6 @@ runGRSCalcChrPos <- function(inObjec, inFile, inYaml){
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile)
   system(command=paste0("rm ", filterMerged, "*"))
   system(command=paste0("rm ", inFile, "*"))
-  system(command=paste0("rm ", filterRsid,"*"))
   system(command=paste0("rm ", plinkFile,"*"))
   return(outScore)
 }
