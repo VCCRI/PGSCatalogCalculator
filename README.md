@@ -28,7 +28,7 @@ devtools::install_github("VCCRI/PGSCatalogDownloader")
 require(PGSCatalogDownloader)
 cl <- parallel::makeCluster(10)
 doParallel::registerDoParallel(cl)
-grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl, inControl='sample.vcf.gz')
+grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl, inControl='sample.vcf.gz', inMeta='meta.RDS')
 parallel::stopCluster(cl)
 ```
 ## Input Parameters for grabScoreID
@@ -39,6 +39,7 @@ parallel::stopCluster(cl)
 * inPGSIDS = File that has newline separated list of PGS IDs that you want to calculate the score for
 * inCL = Cluster that will be used to run the package
 * inControl = Control VCF (Optional)
+* inMeta = Local Mirror of metadata that allows for reuse
 
 Please note that package looks for "sample.yaml" file in the current working directory to ensure that it references the correct packages and environment variables
 
