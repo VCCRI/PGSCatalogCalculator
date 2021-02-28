@@ -341,6 +341,17 @@ getAllScores <- function(inDir){
   return(aggSamples)
 }
 
+
+#' @export
+getLatestMeta <- function(inFile=tempfile()){
+  if(is.null(inFile))  inFile <- tempfile()
+  if(file.exists(inFile)) return(inFile)
+  inspecD <- download.file("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS",destfile=inFile, method="wget", mode="rb")
+  return(inFile)
+}
+  
+
+
 #' @export
 grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inRDS=NULL){
   if (!(is.null(inPGSIDS))){
@@ -416,7 +427,7 @@ checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.ya
 
   
 #' @export
-grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL){
+grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inMeta=NULL){
   checkFilesExist(inputFile=inFile, inputRef=inRef, yamlFile=inYamlFile, controlVCF=inControl)
   if (!(is.null(inPGSIDS))){
     # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
@@ -428,8 +439,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
     print("Calculating all Scores")
     file <- NA
   }
-  inspecTemp <- tempfile()
-  inspecD <- download.file("https://pgscatalogscraper.s3-us-west-2.amazonaws.com/eu_metadata.RDS",destfile=inspecTemp, method="wget", mode="rb")
+  inspecTemp <- getLatestMeta(inMeta)
   inspecFile <- readRDS(inspecTemp)
   outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inFile) else gsub("\\/$", "",yaml::read_yaml(inYamlFile)$outputDir)
   normFile <- 

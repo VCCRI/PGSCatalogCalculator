@@ -7,4 +7,4 @@ export(baseNorm)
 export(runGRSCalc)
 export(runGRSCalcChrPos)
 export(getEUFiles)
-
+export(getLatestMeta)

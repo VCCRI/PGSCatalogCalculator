@@ -5,7 +5,7 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inCL){
   #chrom <- c(as.character(1))
   inDBN <- foreach::foreach(inChrom=chrom, .export = c("baseIndex")) %dopar% {
     #outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inFile) else yaml::read_yaml(inYamlFile)$outputDir
-    filtSNP <- gsub("\\.[a-zA-Z']+(\\.gz)?$", paste0("_",inChrom, "_snp", ".vcf.gz"), inVCF)
+    filtSNP <- paste0(outFile, '_',inChrom,'_snp.vcf.gz')
     #filtSNP <- gsub("\\.bcf", paste0("_",inChrom, "_snp", ".vcf.gz"), inVCF)
     #filterSNP <- system(command=paste('bcftools view', inVCF, '-i \'TYPE="snp"\' -r', inChrom, '-O z -o', filtSNP, '--threads 2'))
     bcftools <- if(is.null(inYaml)) Sys.getenv("bcftools") else yaml::read_yaml(inYaml)$bcftools
