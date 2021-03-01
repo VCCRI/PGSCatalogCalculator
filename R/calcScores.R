@@ -1,6 +1,7 @@
 getFile <- function(inFile, inRecord){
   if(length(inFile) != 0 & file.exists(inFile)){
     inData <- data.table::fread(inFile, stringsAsFactors=FALSE)
+    print(inData)
     inData[,PGS_RECORD_ID := inRecord]
     #inData[,subject_type := "diseased"]
     return(inData)

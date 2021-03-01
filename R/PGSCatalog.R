@@ -302,10 +302,10 @@ runGRSCalc <- function(inObjec, inFile, inYaml){
   filterMerged <- filterMergedPos(inFile=filterRsid, inName=pgsID, inSNPs=grsFile)
   plinkFile <- getMakePlink(inVCF=filterMerged)
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile)
-  system(command=paste0("rm ", filterMerged, "*"))
-  system(command=paste0("rm ", inFile, "*"))
-  system(command=paste0("rm ", filterRsid,"*"))
-  system(command=paste0("rm ", plinkFile,"*"))
+  #system(command=paste0("rm ", filterMerged, "*"))
+  #system(command=paste0("rm ", inFile, "*"))
+  #system(command=paste0("rm ", filterRsid,"*"))
+  #system(command=paste0("rm ", plinkFile,"*"))
   return(outScore)
 }
 
@@ -316,9 +316,9 @@ runGRSCalcChrPos <- function(inObjec, inFile, inYaml){
   filterMerged <- filterMergedPos(inFile=inFile, inName=pgsID, inSNPs=grsFile)
   plinkFile <- getMakePlink(inVCF=filterMerged)
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile)
-  system(command=paste0("rm ", filterMerged, "*"))
-  system(command=paste0("rm ", inFile, "*"))
-  system(command=paste0("rm ", plinkFile,"*"))
+  #system(command=paste0("rm ", filterMerged, "*"))
+  #system(command=paste0("rm ", inFile, "*"))
+  #system(command=paste0("rm ", plinkFile,"*"))
   return(outScore)
 }
 
@@ -392,6 +392,8 @@ grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile
     })
 
     scoreFiles <- rbindlist(scoreFiles)
+    print(paste(scoreFiles$inFile, "control"))
+    print(paste(scoreFiles$inRecord, "control"))
     controlDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
     lapply(scoreFiles$inFile, function(x)if(file.exists(x)) file.remove(x))
     return(controlDat)
@@ -467,11 +469,15 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
       return(scoreFiles)
     })
   scoreFiles <- rbindlist(scoreFiles)
+  print(scoreFiles$inFile)
+  print(scoreFiles$inRecord)
   scoreDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
+  print(scoreDat)
   if(!(is.null(inControl))){
     inControl <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl,inRDS=inspecFile)
   }
- lapply(scoreFiles$inFile, function(x)if(file.exists(x)) file.remove(x))
+ #lapply(scoreFiles$inFile, function(x)if(file.exists(x)) file.remove(x))
+ print(inControl)
  setPlots(scoreDat, inControl, inOutDir=outDir)
  
 }
