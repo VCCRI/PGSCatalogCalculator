@@ -20,9 +20,20 @@ makeFamFile <- function(inControl, inDisease, inOut){
   inFam <- data.table::data.table(V1=baseCommand, V2=baseCommand, V3=0, V4=0, V5=0, V6=-9)
   inFam[V1 %in% controlSamples,"V6"] <- 1
   inFam[V1 %in% inDiseaseSamples,"V6"] <- 2
-  data.table::fwrite(inFam, outFile, col.names = F,sep=" ")
-  return(outFile)
+  return(list(inFam=inFam, outFile=outFile))
+  #data.table::fwrite(inFam, outFile, col.names = F,sep=" ")
+  #return(outFile)
 }
+
+writeFam <- function(inObj){
+  if(is.null(inObjec)){
+       return(FALSE)
+  } else {
+  data.table::fwrite(inObj$inFam, inObj$outFile, col.names = F,sep=" ")
+  return(TRUE)
+  }
+}
+
 
 filterMerged <- function(inFile, inName, inSNPs, inYaml="sample.yaml"){
   outFile <- gsub("\\.vcf\\.gz", paste0("_",inName, "_filt.vcf.gz"), inFile)

@@ -294,7 +294,7 @@ getNormControl <- function(){
 
 
  
-runGRSCalc <- function(inObjec, inFile, inYaml){
+runGRSCalc <- function(inObjec, inFile, inFam){
   grsFile <- getGRSInputRsID(inObjec)
   rsIDFile <- getRSIds(inObjec)
   pgsID <- getPGSId(inObjec)
@@ -302,23 +302,24 @@ runGRSCalc <- function(inObjec, inFile, inYaml){
   filterMerged <- filterMergedPos(inFile=filterRsid, inName=pgsID, inSNPs=grsFile)
   plinkFile <- getMakePlink(inVCF=filterMerged)
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile)
-  #system(command=paste0("rm ", filterMerged, "*"))
-  #system(command=paste0("rm ", inFile, "*"))
-  #system(command=paste0("rm ", filterRsid,"*"))
-  #system(command=paste0("rm ", plinkFile,"*"))
+  system(command=paste0("rm ", filterMerged, "*"))
+  system(command=paste0("rm ", inFile, "*"))
+  system(command=paste0("rm ", filterRsid,"*"))
+  system(command=paste0("rm ", plinkFile,"*"))
   return(outScore)
 }
 
-runGRSCalcChrPos <- function(inObjec, inFile, inYaml){
+runGRSCalcChrPos <- function(inObjec, inFile, inFam){
   grsFile <- getGRSInputChrPos(inObjec)
   regionId <- getChrPos(inObjec)
   pgsID <- getPGSId(inObjec)
   filterMerged <- filterMergedPos(inFile=inFile, inName=pgsID, inSNPs=grsFile)
   plinkFile <- getMakePlink(inVCF=filterMerged)
-  outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile)
-  #system(command=paste0("rm ", filterMerged, "*"))
-  #system(command=paste0("rm ", inFile, "*"))
-  #system(command=paste0("rm ", plinkFile,"*"))
+  inCont <- writeFam(inFam)
+  outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=inCont)
+  system(command=paste0("rm ", filterMerged, "*"))
+  system(command=paste0("rm ", inFile, "*"))
+  system(command=paste0("rm ", plinkFile,"*"))
   return(outScore)
 }
 
@@ -443,12 +444,22 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   inspecTemp <- getLatestMeta(inMeta)
   inspecFile <- readRDS(inspecTemp)
   outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inFile) else gsub("\\/$", "",yaml::read_yaml(inYamlFile)$outputDir)
+  famFile <- NULL
+  if(is.null(inControl)) {
   normFile <- 
     baseNorm(inVCF=inFile,
            inRef=inRef,
            outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inFile)),sep="/"),
            inYaml=inYamlFile)
-
+  } else {
+    mergedVCF <- mergeVCF(inControl, inFile)
+    normFile <- baseNorm(inVCF=mergedVCF,
+           inRef=inRef,
+           outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inFile)),sep="/"),
+           inYaml=inYamlFile)
+    # Need to account for overlap in sample names
+    famFile <- makeFamFile(inControl, inFile)
+  }
   ##while(!(resolved(inspecFile) & resolved(normFile))) {}
      ## Need to fix ID
      #normFile <- future::value(normFile)
@@ -458,26 +469,19 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
       if(inObjec@`pgsId` %in% file | is.na(file)){
         scoreFiles <- foreach::foreach(d=iterators::iter(unlist(normFile)), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
           if(getPGSType(inObjec) == "rsID"){
-           scoreFile <- runGRSCalc(inObjec, d)
+           scoreFile <- runGRSCalc(inObjec, d, famFile)
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
           } else {
-           scoreFile <- runGRSCalcChrPos(inObjec, d)
+           scoreFile <- runGRSCalcChrPos(inObjec, d, famFile)
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
           }
       }
       }
       return(scoreFiles)
     })
+
   scoreFiles <- rbindlist(scoreFiles)
-  print(scoreFiles$inFile)
-  print(scoreFiles$inRecord)
   scoreDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
-  print(scoreDat)
-  if(!(is.null(inControl))){
-    inControl <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl,inRDS=inspecFile)
-  }
- #lapply(scoreFiles$inFile, function(x)if(file.exists(x)) file.remove(x))
- print(inControl)
- setPlots(scoreDat, inControl, inOutDir=outDir)
+  setPlots(scoreDat, inControl, inOutDir=outDir)
  
 }
