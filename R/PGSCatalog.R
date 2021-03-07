@@ -301,7 +301,8 @@ runGRSCalc <- function(inObjec, inFile, inFam){
   filterRsid <- filterMerged(inFile=inFile, inName=pgsID, inSNPs=rsIDFile)
   filterMerged <- filterMergedPos(inFile=filterRsid, inName=pgsID, inSNPs=grsFile)
   plinkFile <- getMakePlink(inVCF=filterMerged)
-  outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile)
+  inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
+  outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=inCont)
   system(command=paste0("rm ", filterMerged, "*"))
   system(command=paste0("rm ", inFile, "*"))
   system(command=paste0("rm ", filterRsid,"*"))
@@ -315,7 +316,7 @@ runGRSCalcChrPos <- function(inObjec, inFile, inFam){
   pgsID <- getPGSId(inObjec)
   filterMerged <- filterMergedPos(inFile=inFile, inName=pgsID, inSNPs=grsFile)
   plinkFile <- getMakePlink(inVCF=filterMerged)
-  inCont <- writeFam(inFam)
+  inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=inCont)
   system(command=paste0("rm ", filterMerged, "*"))
   system(command=paste0("rm ", inFile, "*"))
@@ -352,54 +353,6 @@ getLatestMeta <- function(inFile=tempfile()){
   
 
 
-#' @export
-grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inRDS=NULL){
-  if (!(is.null(inPGSIDS))){
-    # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
-    file <- data.table::fread(inPGSIDS, stringsAsFactors=F, header=F)
-    file <- file$V1
-  } else if(!(is.null(inPGSID))) {
-    file <- inPGSID
-  } else {
-    print("Calculating all Scores")
-    file <- NA
-  }
-  inspecFile <- inRDS
-  outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inControl) else yaml::read_yaml(inYamlFile)$outputDir
-  normFile <- 
-    baseNorm(inVCF=inControl,
-           inRef=inRef,
-           outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inControl)), sep="/"),
-           inYaml=inYamlFile)
-
-  ##while(!(resolved(inspecFile) & resolved(normFile))) {}
-     ## Need to fix ID
-     #normFile <- future::value(normFile)
-     inputFile <- inspecFile
-     scoreFiles <- lapply(inputFile, function(inObjec){
-      scoreFiles <- data.table::data.table() 
-      if(inObjec@`pgsId` %in% file | is.na(file)){
-        scoreFiles <- foreach::foreach(d=iterators::iter(unlist(normFile)), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
-         if(getPGSType(inObjec) == "rsID"){
-           scoreFile <- runGRSCalc(inObjec, d)
-           return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
-          } else {
-           scoreFile <- runGRSCalcChrPos(inObjec, d)
-           return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
-          }
-      }
-      }
-      return(scoreFiles)
-    })
-
-    scoreFiles <- rbindlist(scoreFiles)
-    print(paste(scoreFiles$inFile, "control"))
-    print(paste(scoreFiles$inRecord, "control"))
-    controlDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
-    lapply(scoreFiles$inFile, function(x)if(file.exists(x)) file.remove(x))
-    return(controlDat)
-  
-}
 checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.yaml", controlVCF=NULL){
   inCheck <- list(inputFile, inputRef, yamlFile)
   inFiles <- unlist(lapply(inCheck, function(x){
@@ -445,6 +398,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   inspecFile <- readRDS(inspecTemp)
   outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inFile) else gsub("\\/$", "",yaml::read_yaml(inYamlFile)$outputDir)
   famFile <- NULL
+  disSample <- NULL
   if(is.null(inControl)) {
   normFile <- 
     baseNorm(inVCF=inFile,
@@ -455,10 +409,12 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
     mergedVCF <- mergeVCF(inControl, inFile)
     normFile <- baseNorm(inVCF=mergedVCF,
            inRef=inRef,
-           outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inFile)),sep="/"),
+           outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(mergedVCF)),sep="/"),
            inYaml=inYamlFile)
     # Need to account for overlap in sample names
-    famFile <- makeFamFile(inControl, inFile)
+    famFile <- makeFamFile(inControl, inFile, normFile)
+    disSample <- famFile
+    disSample <- disSample[V6 == "2", V1]
   }
   ##while(!(resolved(inspecFile) & resolved(normFile))) {}
      ## Need to fix ID
@@ -482,6 +438,10 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
 
   scoreFiles <- rbindlist(scoreFiles)
   scoreDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
+  if(!(is.null(disSample))){
+    inControl <- scoreDat[IID %in% disSample,]
+    scoreDat <- scoreDat[!(IID %in% disSample),]
+  }
   setPlots(scoreDat, inControl, inOutDir=outDir)
  
 }

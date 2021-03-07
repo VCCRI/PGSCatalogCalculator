@@ -1,35 +1,40 @@
-mergeVCF <- function(inControl, inDisease){
+mergeVCF <- function(inControl, inDisease, inYaml="sample.yaml"){
   # TODO Write SNP Filter only
   outFile <- gsub("\\.vcf\\.gz", "_merged.vcf.gz", inDisease)
-  inControlIndex <- file.exists(paste0(inControl, ".tbi"))
-  inDiseaseIndex <- file.exists(paste0(inDisease, ".tbi"))
+  inControlIndex <- file.exists(paste0(inControl, ".csi"))
+  inDiseaseIndex <- file.exists(paste0(inDisease, ".csi"))
   if(!inDiseaseIndex) baseIndex(inDisease, inYaml)
   if(!inControlIndex) baseIndex(inControl, inYaml)
-  baseCommand <- paste("bcftools merge --missing-to-ref -m none", inControl, inDisease, "-o", outFile, "-O z --threads 5")
+  bcftools <- if(is.null(inYaml)) Sys.getenv("bcftools") else yaml::read_yaml(inYaml)$bcftools
+  baseCommand <- paste(bcftools, "merge --missing-to-ref -m none  --force-samples", inControl, inDisease, "-o", outFile, "-O z --threads 5")
   system(command=baseCommand)
-  baseIndex(outFile)
+  baseIndex(outFile, inYaml)
   return(outFile)
 }
 
-makeFamFile <- function(inControl, inDisease, inOut){
-  outFile <- gsub("(\\.vcf\\.gz)|\\.bcf", "_plink.fam", inOut)
-  baseCommand <- system(paste("bcftools query -l",  inOut), intern=TRUE)
+makeFamFile <- function(inControl, inDisease, inOut, inYaml="sample.yaml"){
+  bcftools <- if(is.null(inYaml)) Sys.getenv("bcftools") else yaml::read_yaml(inYaml)$bcftools
+  baseCommand <- system(paste(bcftools, "query -l",  inOut), intern=TRUE)
   # TODO Check if there is any overlap in control or diseased samples
-  controlSamples <- system(paste("bcftools query -l", inControl), intern=TRUE)
-  inDiseaseSamples <- system(paste("bcftools query -l", inDisease), intern=TRUE)
-  inFam <- data.table::data.table(V1=baseCommand, V2=baseCommand, V3=0, V4=0, V5=0, V6=-9)
+  controlSamples <- system(paste(bcftools,"query -l", inControl), intern=TRUE)
+  inDiseaseSamples <- system(paste(bcftools,"query -l", inDisease), intern=TRUE)
+  sameSamples <- intersect(inDiseaseSamples, controlSamples)
+  matchedSamples <- inDiseaseSamples[match(sameSamples, inDiseaseSamples)]
+  matchedSamples <- unlist(lapply(matchedSamples, function(x)paste0("2:", x)))
+  inDiseaseSamples[match(sameSamples, inDiseaseSamples)] <- matchedSamples
+ inFam <- data.table::data.table(V1=baseCommand, V2=baseCommand, V3=0, V4=0, V5=0, V6=-9)
   inFam[V1 %in% controlSamples,"V6"] <- 1
   inFam[V1 %in% inDiseaseSamples,"V6"] <- 2
-  return(list(inFam=inFam, outFile=outFile))
+  return(inFam=inFam)
   #data.table::fwrite(inFam, outFile, col.names = F,sep=" ")
   #return(outFile)
 }
 
-writeFam <- function(inObj){
-  if(is.null(inObjec)){
+writeFam <- function(inFam, inFile){
+  if(is.null(inFam)){
        return(FALSE)
   } else {
-  data.table::fwrite(inObj$inFam, inObj$outFile, col.names = F,sep=" ")
+  data.table::fwrite(inFam, inFile, col.names = F,sep=" ")
   return(TRUE)
   }
 }
