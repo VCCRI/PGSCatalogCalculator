@@ -14,6 +14,40 @@ getMakePlink <- function(inVCF, inYaml="sample.yaml"){
   return(outFile)
 }
 
+getMergePlink <- function(inControl, inDisease,inYaml="sample.yaml"){
+  #inPlink <- "/g/data/jb96/software/plink_1.9_linux_x86_64_20181202/plink"
+  inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
+  outDir <- if(is.null(yaml::read_yaml(inYaml)$outputDir)) dirname(inDiseaseease) else gsub("\\/$", "",yaml::read_yaml(inYaml)$outputDir)
+  outFile <- paste(outDir, gsub("_plink","_merge_plink", basename(inDisease)),sep="/")
+  inDis <- paste0(inDisease, ".bed")
+  inCont <- paste0(inControl, ".bed")
+  if(!(file.exists(inDis))) inDisease <- gsub("_plink", "_plink-temporary", inDisease)
+  if(!(file.exists(inCont))) inControl <- gsub("_plink", "_plink-temporary", inControl)
+  if(!(file.exists(inDis)) & !(file.exists(inCont))){
+    return(NULL)
+  } else if(file.exists(inCont) & file.exists(inDis)){
+    inControl <- unlist(lapply(c("bed", "bim", "fam"), function(x) paste(inControl, x, sep=".")))
+    #baseCommand <- paste(inPlink, inType, " --allow-extra-chr --maf 0.05 --mind 0.1 --geno 0.1 --hwe 1e-6 --vcf-filter --make-bed --chr 1-22 XY --memory 4096 --out", outFile)
+    system2(command=inPlink, args=c("--bfile", inDisease, "--bmerge", inControl, "--make-bed", "--allow-no-sex", "--memory", "4096","--out", outFile), stdout=FALSE)
+    return(outFile)
+  } else if(file.exists(inCont) | file.exists(inDis)){
+    inOut <- c(file.exists(inCont), file.exists(inDis))
+    return(c(inControl, inDisease)[which(inOut)])
+     
+  }
+
+}
+
+
+getRow <- function(inControl, inDisease){
+  it <- itertools::ihasNext(product(inControl, inDisease))
+  while (itertools::hasNext(it)) {
+    x <- nextElem(it)
+    makeFamFile(x[[1]]$inFile, x[[2]]$inFile)
+    getMergePlink(x[[1]]$inFile, x[[2]]$inFile)
+  }
+}
+
 checkPheno <- function(inFam){
   #Check if Pheno is Case Control
   return(all(c(1, 2) %in% as.numeric(inFam$V6)))

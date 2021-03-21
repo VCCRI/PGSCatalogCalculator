@@ -1,5 +1,6 @@
 plinkGRS <- function(inFile, inGRS, inYaml="sample.yaml", inControl=FALSE){
   #inPlink <- "/g/data/jb96/software/plink_1.9_linux_x86_64_20181202/plink"
+  if(is.null(inFile)) return(NULL)
   inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
   outFile <- gsub("_plink", "_score", inFile)
   ##TODO prettifry paste

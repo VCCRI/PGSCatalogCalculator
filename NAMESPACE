@@ -2,6 +2,8 @@
 importClassesFrom(data.table, data.table)
 importFrom(foreach,"%dopar%")
 import(data.table)
+import(iterators)
+import(itertools)
 export(grabScoreId)
 export(baseNorm)
 export(runGRSCalc)

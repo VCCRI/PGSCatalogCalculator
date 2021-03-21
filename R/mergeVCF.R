@@ -12,9 +12,8 @@ mergeVCF <- function(inControl, inDisease, inYaml="sample.yaml"){
   return(outFile)
 }
 
-makeFamFile <- function(inControl, inDisease, inOut, inYaml="sample.yaml"){
+getDisSample <- function(inControl, inDisease, inYaml="sample.yaml"){
   bcftools <- if(is.null(inYaml)) Sys.getenv("bcftools") else yaml::read_yaml(inYaml)$bcftools
-  baseCommand <- system(paste(bcftools, "query -l",  inOut), intern=TRUE)
   # TODO Check if there is any overlap in control or diseased samples
   controlSamples <- system(paste(bcftools,"query -l", inControl), intern=TRUE)
   inDiseaseSamples <- system(paste(bcftools,"query -l", inDisease), intern=TRUE)
@@ -22,12 +21,25 @@ makeFamFile <- function(inControl, inDisease, inOut, inYaml="sample.yaml"){
   matchedSamples <- inDiseaseSamples[match(sameSamples, inDiseaseSamples)]
   matchedSamples <- unlist(lapply(matchedSamples, function(x)paste0("2:", x)))
   inDiseaseSamples[match(sameSamples, inDiseaseSamples)] <- matchedSamples
- inFam <- data.table::data.table(V1=baseCommand, V2=baseCommand, V3=0, V4=0, V5=0, V6=-9)
-  inFam[V1 %in% controlSamples,"V6"] <- 1
-  inFam[V1 %in% inDiseaseSamples,"V6"] <- 2
-  return(inFam=inFam)
-  #data.table::fwrite(inFam, outFile, col.names = F,sep=" ")
-  #return(outFile)
+  return(inDiseaseSamples)
+}
+
+makeFamFile <- function(inControl, inDisease, inYaml="sample.yaml"){
+  # TODO Check if there is any overlap in control or diseased samples
+  controlSamples <- data.table::fread(inControl,header=F)$V1
+  inDiseaseSamples <- data.table::fread(inDisease, header=F)$V1
+  sameSamples <- intersect(inDiseaseSamples, controlSamples)
+  matchedSamples <- inDiseaseSamples[match(sameSamples, inDiseaseSamples)]
+  matchedSamples <- unlist(lapply(matchedSamples, function(x)paste0("2:", x)))
+  inDiseaseSamples[match(sameSamples, inDiseaseSamples)] <- matchedSamples
+  inDis <- data.table::data.table(V1=inDiseaseSamples, V2=inDiseaseSamples, V3=0, V4=0, V5=0, V6=-9)
+  inDis[V1 %in% inDiseaseSamples,"V6"] <- 2
+  writeFam(inDis, inDisease)
+
+  inCont <- data.table::data.table(V1=controlSamples, V2=controlSamples, V3=0, V4=0, V5=0, V6=-9)
+  inCont[V1 %in% controlSamples,"V6"] <- 1
+  writeFam(inCont, inControl)
+  return(inDiseaseSamples)
 }
 
 writeFam <- function(inFam, inFile){

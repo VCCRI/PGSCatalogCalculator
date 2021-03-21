@@ -33,7 +33,7 @@ getLatestMeta will always return the filename location of the local mirror
 require(PGSCatalogDownloader)
 cl <- parallel::makeCluster(10)
 doParallel::registerDoParallel(cl)
-grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl, inControl='sample.vcf.gz', inMeta=inMeta)
+grabScoreId(inFile='sample.vcf.gz', inRef='/g/data/jb96/References_and_Databases/hs37d5.fa/hs37d5x.fa', inPGSID='PGS000073', inCL=cl, inControl='sample_test.vcf.gz', inMeta=inMeta)
 parallel::stopCluster(cl)
 ```
 ## Input Parameters for grabScoreID
