@@ -420,7 +420,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   inspecFile <- readRDS(inspecTemp)
   outDir <- if(!(is.null(yaml::read_yaml(inYamlFile)$tempDir))){
     gsub("\\/$", "",yaml::read_yaml(inYamlFile)$tempDir)
-  } else if(is.null(yaml::read_yaml(inYamlFile)$outputDir)){
+  } else if(!(is.null(yaml::read_yaml(inYamlFile)$outputDir))){
     gsub("\\/$", "",yaml::read_yaml(inYamlFile)$outputDir)
   } else {
     dirname(inFile)
