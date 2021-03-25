@@ -398,52 +398,9 @@ checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.ya
   if(is.null(yaml::read_yaml(yamlFile)$outputDir)){
     print("No Output Dir Specified")
   }
-}
-grabScoreControl <- function(inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inRDS=NULL){
-  if (!(is.null(inPGSIDS))){
-    # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
-    file <- data.table::fread(inPGSIDS, stringsAsFactors=F, header=F)
-    file <- file$V1
-  } else if(!(is.null(inPGSID))) {
-    file <- inPGSID
-  } else {
-    print("Calculating all Scores")
-    file <- NA
+  if(is.null(yaml::read_yaml(yamlFile)$tempDir)){
+    print("No Output Dir Specified")
   }
-  inspecFile <- inRDS
-  outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inControl) else yaml::read_yaml(inYamlFile)$outputDir
-  normFile <- 
-    baseNorm(inVCF=inControl,
-           inRef=inRef,
-           outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inControl)), sep="/"),
-           inYaml=inYamlFile)
-
-  ##while(!(resolved(inspecFile) & resolved(normFile))) {}
-     ## Need to fix ID
-     #normFile <- future::value(normFile)
-     inputFile <- inspecFile
-     scoreFiles <- lapply(inputFile, function(inObjec){
-      scoreFiles <- data.table::data.table() 
-      if(inObjec@`pgsId` %in% file | is.na(file)){
-        scoreFiles <- foreach::foreach(d=iterators::iter(unlist(normFile)), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
-         if(getPGSType(inObjec) == "rsID"){
-           scoreFile <- runGRSCalc(inObjec, d)
-           return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
-          } else {
-           scoreFile <- runGRSCalcChrPos(inObjec, d)
-           return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
-          }
-      }
-      }
-      return(scoreFiles)
-    })
-
-    scoreFiles <- rbindlist(scoreFiles)
-    #controlDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
-    #lapply(scoreFiles$inFile, function(x)if(file.exists(x)) file.remove(x))
-    #return(controlDat)
-    return(scoreFiles)
-
 }
   
 #' @export
@@ -461,7 +418,13 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   }
   inspecTemp <- getLatestMeta(inMeta)
   inspecFile <- readRDS(inspecTemp)
-  outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inFile) else gsub("\\/$", "",yaml::read_yaml(inYamlFile)$outputDir)
+  outDir <- if(!(is.null(yaml::read_yaml(inYamlFile)$tempDir))){
+    gsub("\\/$", "",yaml::read_yaml(inYamlFile)$tempDir)
+  } else if(is.null(yaml::read_yaml(inYamlFile)$outputDir)){
+    gsub("\\/$", "",yaml::read_yaml(inYamlFile)$outputDir)
+  } else {
+    dirname(inFile)
+  }
   famFile <- NULL
   disSample <- NULL
   normFile <- 
@@ -500,9 +463,9 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
           } else {
             if(!(is.null(inControl))) {
-             scoreFile <- runGRSCalcChrPos(inObjec, d$normFile, d$controlFile,famFile)
+             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=famFile)
             } else {
-             scoreFile <- runGRSCalcChrPos(inObjec, d,famFile)
+             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d,inFam=famFile)
             }
            if(is.null(scoreFile)) return(NULL)
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))

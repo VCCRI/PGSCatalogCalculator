@@ -17,7 +17,13 @@ getMakePlink <- function(inVCF, inYaml="sample.yaml"){
 getMergePlink <- function(inControl, inDisease,inYaml="sample.yaml"){
   #inPlink <- "/g/data/jb96/software/plink_1.9_linux_x86_64_20181202/plink"
   inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
-  outDir <- if(is.null(yaml::read_yaml(inYaml)$outputDir)) dirname(inDiseaseease) else gsub("\\/$", "",yaml::read_yaml(inYaml)$outputDir)
+  outDir <- if(!(is.null(yaml::read_yaml(inYamlFile)$tempDir))){
+    gsub("\\/$", "",yaml::read_yaml(inYamlFile)$tempDir)
+  } else if(is.null(yaml::read_yaml(inYamlFile)$outputDir)){
+    gsub("\\/$", "",yaml::read_yaml(inYamlFile)$outputDir)
+  } else {
+    dirname(inFile)
+  }
   outFile <- paste(outDir, gsub("_plink","_merge_plink", basename(inDisease)),sep="/")
   inDis <- paste0(inDisease, ".bed")
   inCont <- paste0(inControl, ".bed")
@@ -26,9 +32,9 @@ getMergePlink <- function(inControl, inDisease,inYaml="sample.yaml"){
   if(!(file.exists(inDis)) & !(file.exists(inCont))){
     return(NULL)
   } else if(file.exists(inCont) & file.exists(inDis)){
-    inControl <- unlist(lapply(c("bed", "bim", "fam"), function(x) paste(inControl, x, sep=".")))
+    allCont <- unlist(lapply(c("bed", "bim", "fam"), function(x) paste(inControl, x, sep=".")))
     #baseCommand <- paste(inPlink, inType, " --allow-extra-chr --maf 0.05 --mind 0.1 --geno 0.1 --hwe 1e-6 --vcf-filter --make-bed --chr 1-22 XY --memory 4096 --out", outFile)
-    system2(command=inPlink, args=c("--bfile", inDisease, "--bmerge", inControl, "--make-bed", "--allow-no-sex", "--memory", "4096","--out", outFile), stdout=FALSE)
+    system2(command=inPlink, args=c("--bfile", inDisease, "--bmerge", allCont, "--make-bed", "--allow-no-sex", "--memory", "4096","--out", outFile), stdout=FALSE)
     return(outFile)
   } else if(file.exists(inCont) | file.exists(inDis)){
     inOut <- c(file.exists(inCont), file.exists(inDis))
