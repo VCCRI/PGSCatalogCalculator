@@ -399,7 +399,7 @@ checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.ya
     print("No Output Dir Specified")
   }
   if(is.null(yaml::read_yaml(yamlFile)$tempDir)){
-    print("No Output Dir Specified")
+    print("No Temp Dir Specified")
   }
 }
   

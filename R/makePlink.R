@@ -17,12 +17,12 @@ getMakePlink <- function(inVCF, inYaml="sample.yaml"){
 getMergePlink <- function(inControl, inDisease,inYaml="sample.yaml"){
   #inPlink <- "/g/data/jb96/software/plink_1.9_linux_x86_64_20181202/plink"
   inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
-  outDir <- if(!(is.null(yaml::read_yaml(inYamlFile)$tempDir))){
-    gsub("\\/$", "",yaml::read_yaml(inYamlFile)$tempDir)
-  } else if(is.null(yaml::read_yaml(inYamlFile)$outputDir)){
-    gsub("\\/$", "",yaml::read_yaml(inYamlFile)$outputDir)
+  outDir <- if(!(is.null(yaml::read_yaml(inYaml)$tempDir))){
+    gsub("\\/$", "",yaml::read_yaml(inYaml)$tempDir)
+  } else if(is.null(yaml::read_yaml(inYaml)$outputDir)){
+    gsub("\\/$", "",yaml::read_yaml(inYaml)$outputDir)
   } else {
-    dirname(inFile)
+    dirname(inDisease)
   }
   outFile <- paste(outDir, gsub("_plink","_merge_plink", basename(inDisease)),sep="/")
   inDis <- paste0(inDisease, ".bed")
