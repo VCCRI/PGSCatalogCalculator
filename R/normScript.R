@@ -3,7 +3,7 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inCL){
   chrom <- c(as.character(1:22), "X", "Y")
   #chrom <- c(as.character(2:22), "X", "Y")
   #chrom <- c(as.character(1))
-  inDBN <- foreach::foreach(inChrom=chrom, .export = c("baseIndex")) %dopar% {
+  inDBN <- unlist(lapply(chrom, function(inChrom){
     #outDir <- if(is.null(yaml::read_yaml(inYamlFile)$outputDir)) dirname(inFile) else yaml::read_yaml(inYamlFile)$outputDir
     filtSNP <- paste0(outFile, '_',inChrom,'_snp.vcf.gz')
     #filtSNP <- gsub("\\.bcf", paste0("_",inChrom, "_snp", ".vcf.gz"), inVCF)
@@ -48,7 +48,7 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inCL){
     baseIndex(inDBN, inYaml)
     
     return(inDBN)
-  }
+  }))
   return(inDBN)
 }
 
