@@ -452,25 +452,26 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
         } else {
           combFrame <- data.table::setDT(list(normFile=unlist(normFile)))
         }
-        scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
+        #scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
+        scoreFiles <- do.call("rbind", apply(unique(combFrame), 1, function(d){
           if(getPGSType(inObjec) == "rsID"){
             if(!(is.null(inControl))) {
-             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=famFile)
+             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d[1], inCont=d[2],inFam=famFile)
            } else {
-             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d, inFam=famFile)
+             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d[1], inFam=famFile)
            }
            if(is.null(scoreFile)) return(NULL)
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
           } else {
             if(!(is.null(inControl))) {
-             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=famFile)
+             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d[1], inCont=d[2],inFam=famFile)
             } else {
-             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d,inFam=famFile)
+             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d[1],inFam=famFile)
             }
            if(is.null(scoreFile)) return(NULL)
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
           }
-      }
+      }))
       }
       return(scoreFiles)
     })
