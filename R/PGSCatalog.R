@@ -455,7 +455,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
         }
         scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
           if(getPGSType(inObjec) == "rsID"){
-            if(any((match("controlFile", names(d))))){
+            if(any(("controlFile" %in% names(d)))){
              scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
            } else {
              scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inFam=d$inFamFile)
@@ -463,7 +463,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
            if(is.null(scoreFile)) return(NULL)
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
           } else {
-            if(any((match("controlFile", names(d))))){
+            if(any(("controlFile" %in% names(d)))){
              scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
             } else {
              scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile,inFam=d$inFamFile)
