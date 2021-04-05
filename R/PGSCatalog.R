@@ -309,7 +309,7 @@ runGRSCalc <- function(inObjec, inDis,inFam,inCont=NULL){
     plinkFile <- plinkFileDis
   }
 
-  isControl <- if(is.null(inFam)) FALSE else TRUE
+  isControl <- any(inFam)
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=isControl)
   ##system(command=paste0("rm ", filterMerged, "*"))
@@ -425,7 +425,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   } else {
     dirname(inFile)
   }
-  famFile <- NULL
+  famFile <- FALSE
   disSample <- NULL
   normFile <- 
     baseNorm(inVCF=inFile,
@@ -439,6 +439,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
              outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inControl)),sep="/"),
              inYaml=inYamlFile)
     disSample <- getDisSample(inControl=controlFile[[1]], inDisease=normFile[[1]])
+    famFile <- TRUE
   }
   ##while(!(resolved(inspecFile) & resolved(normFile))) {}
      ## Need to fix ID
@@ -448,24 +449,24 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
       scoreFiles <- data.table::data.table() 
       if(inObjec@`pgsId` %in% file | is.na(file)){
         if(!(is.null(inControl))) {
-          combFrame <- data.table::setDT(list(normFile=unlist(normFile), controlFile=unlist(controlFile)))
+          combFrame <- data.table::setDT(list(normFile=unlist(normFile), controlFile=unlist(controlFile), inFamFile=rep(famFile, times=length(unlist(normFile)))))
         } else {
-          combFrame <- data.table::setDT(list(normFile=unlist(normFile)))
+          combFrame <- data.table::setDT(list(normFile=unlist(normFile), inFamFile=rep(famFile, times=length(unlist(normFile)))))
         }
-        scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
+        scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
           if(getPGSType(inObjec) == "rsID"){
-            if(!(is.null(inControl))) {
-             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=famFile)
+            if(any((match("controlFile", names(d))))){
+             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
            } else {
-             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d, inFam=famFile)
+             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inFam=d$inFamFile)
            }
            if(is.null(scoreFile)) return(NULL)
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
           } else {
-            if(!(is.null(inControl))) {
-             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=famFile)
+            if(any((match("controlFile", names(d))))){
+             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
             } else {
-             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d,inFam=famFile)
+             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile,inFam=d$inFamFile)
             }
            if(is.null(scoreFile)) return(NULL)
            return(data.table::data.table(inFile=scoreFile,inRecord=getPGSId(inObjec)))
