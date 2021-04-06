@@ -489,8 +489,8 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
 
   #getMergePlink(scoreFiles, inControl)
   if(!(is.null(disSample))){
-    inControl <- scoreDat[!(IID %in% disSample),]
-    scoreDat <- scoreDat[IID %in% disSample,]
+    inControl <- scoreDat[!(IID %in% as.character(disSample)),]
+    scoreDat <- scoreDat[IID %in% as.character(disSample),]
   }
   setPlots(scoreDat, inControl, inOutDir=outDir)
  
