@@ -439,6 +439,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
              outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inControl)),sep="/"),
              inYaml=inYamlFile)
     disSample <- getDisSample(inControl=controlFile[[1]], inDisease=normFile[[1]])
+    controlSamples <- getDisSample(inDisease=controlFile[[1]], inControl=normFile[[1]])
     famFile <- TRUE
   }
   ##while(!(resolved(inspecFile) & resolved(normFile))) {}
@@ -478,6 +479,8 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
 
   scoreFiles <- unique(rbindlist(scoreFiles))
   scoreDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
+	assertthat::assert_that(length(intersect(disSample, scoreDat$IID) != 0))
+	assertthat::assert_that(length(intersect(controlSamples, scoreDat$IID) != 0))
   #if(!(is.null(inControl))){
     #inControl <- grabScoreControl(inPGSID=inPGSID, inPGSIDS=inPGSIDS, inRef=inRef, inYamlFile=inYamlFile, inCL=inCL, inControl=inControl,inRDS=inspecFile)
   #}
