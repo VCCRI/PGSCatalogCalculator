@@ -11,7 +11,11 @@ getMakePlink <- function(inVCF, inYaml="sample.yaml"){
  }
   #baseCommand <- paste(inPlink, inType, " --allow-extra-chr --maf 0.05 --mind 0.1 --geno 0.1 --hwe 1e-6 --vcf-filter --make-bed --chr 1-22 XY --memory 4096 --out", outFile)
   system2(command=inPlink, args=c(inType, "--allow-extra-chr", "--mind", "0.1", "--geno", "0.05",  "--vcf-filter", "--make-bed", "--chr", "1-22 XY", "--memory", "4096","--out", outFile), stdout=FALSE)
-  return(outFile)
+  if(!(file.exists(paste0(outFile, ".bim")))){
+    return(NULL)
+  } else {
+    return(outFile)
+  }
 }
 
 getMergePlink <- function(inControl, inDisease,inYaml="sample.yaml"){

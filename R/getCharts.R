@@ -126,6 +126,7 @@ getQuantilePlot <- function(inData){
 getPlots <- function(inDis, inControl, inOutDir=NULL){
   disData <- inDis
   if(is.null(inControl)){
+    print("Using 1000G Control Samples as specified or due to insufficient control samples")
     controlData <- data.table::fread(system.file("extdata", "control_samples.csv", package="PGSCatalogDownloader"), stringsAsFactors=F)
   } else {
     controlData <- inControl
