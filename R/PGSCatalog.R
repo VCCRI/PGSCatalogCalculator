@@ -106,6 +106,32 @@ getPGSFiles <- function(inData){
   return(list(file=tempFile, pgsId=pgsId))
 }
 
+#' @importFrom methods setClass setAs
+setClassPGSProfile <- function(){
+  #' An S4 class to represent a bank account.
+  #'
+  #' @slot inFile A length-one character vector
+  #' @slot inRecord A length-one character vector
+  #' @slot hasControl A length-one boolean vector
+  #' @slot midSamples A length-one boolean vector
+  methods::setClassUnion("nullOrCharacter", c("NULL", "character"))
+  methods::setClass("pgsProfile", slots=(list(inFile="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
+  #methods::setClass("pgsProfile", slots=(list(inFile="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
+}
+getPGSProfileInFile <- function(inPGS){
+  return(inPGS@inFile)
+}
+getPGSProfileInRecord <- function(inPGS){
+  return(inPGS@inRecord)
+}
+getPGSProfileHasControl <- function(inPGS){
+  return(inPGS@hasControl)
+}
+getPGSProfileMidSamples <- function(inPGS){
+  return(inPGS@midSamples)
+}
+
+#' @importFrom methods setClass setAs
 setClassPGSGRS <- function(){
   setClassUnion("nullOrDatatable", c("NULL", "data.table"))
   setClassUnion("nullOrCharacter", c("NULL", "character"))
@@ -299,21 +325,25 @@ runGRSCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   filterRsidDis <- filterMerged(inFile=inDis, inName=pgsID, inSNPs=rsIDFile)
   filterMergedDis <- filterMergedPos(inFile=filterRsidDis, inName=pgsID, inSNPs=grsFile)
   plinkFileDis <- getMakePlink(inVCF=filterMergedDis)
+  if(all(!(is.null(plinkFileDis$midSamples)))){
+    stop("Error creating a PLINK File")
+  }
   if(!(is.null(inCont))) {
     filterRsidCont <- filterMerged(inFile=inCont, inName=pgsID, inSNPs=rsIDFile)
     filterMergedCont <- filterMergedPos(inFile=filterRsidCont, inName=pgsID, inSNPs=grsFile)
     plinkFileCont <- getMakePlink(inVCF=filterMergedCont)
-    if(is.null(plinkFileCont)){
+    if(all(!(is.null(plinkFileCont$midSamples)))){
       plinkFile <- plinkFileDis
       inCont <- NULL
     } else {
-      if(file.exists(paste0(plinkFileCont, ".fam")) &  file.exists(paste0(plinkFileDis, ".fam"))) makeFamFile(inControl=paste0(plinkFileCont, ".fam"), inDisease=paste0(plinkFileDis, ".fam"), inOut)
-      plinkFile <- getMergePlink(inControl=plinkFileCont, inDisease=plinkFileDis)
+      if(file.exists(paste0(plinkFileCont$outFile, ".fam")) &  file.exists(paste0(plinkFileDis$outFile, ".fam"))) makeFamFile(inControl=paste0(plinkFileCont$outFile, ".fam"), inDisease=paste0(plinkFileDis$outFile, ".fam"), inOut)
+      plinkFile <- getMergePlink(inControl=plinkFileCont$outFile, inDisease=plinkFileDis$outFile)
     }
   } else {
-    plinkFile <- plinkFileDis
+    plinkFile <- plinkFileDis$outFile
   }
 
+  totMidSamples <- c(plinkFileDis$midSamples, plinkFileCont$midSamples)
   isControl <- if(is.null(inCont)) FALSE else TRUE
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=isControl)
@@ -321,7 +351,7 @@ runGRSCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   #system(command=paste0("rm ", inFile, "*"))
   ##system(command=paste0("rm ", filterRsid,"*"))
   #system(command=paste0("rm ", plinkFile,"*"))
-  return(list(score=outScore, hasControl=isControl))
+  return(list(score=outScore, hasControl=isControl,midSamples=totMidSamples))
 }
 
 runGRSCalcChrPos <- function(inObjec, inDis, inFam,inCont=NULL){
@@ -330,20 +360,24 @@ runGRSCalcChrPos <- function(inObjec, inDis, inFam,inCont=NULL){
   pgsID <- getPGSId(inObjec)
   filterMergedDis <- filterMergedPos(inFile=inDis, inName=pgsID, inSNPs=grsFile)
   plinkFileDis <- getMakePlink(inVCF=filterMergedDis)
+  if(all(!(is.null(plinkFileDis$midSamples)))){
+    stop("Error creating a PLINK File")
+  }
   if(!(is.null(inCont))) {
     filterMergedCont <- filterMergedPos(inFile=inCont, inName=pgsID, inSNPs=grsFile)
     plinkFileCont <- getMakePlink(inVCF=filterMergedCont)
-    if(file.exists(paste0(plinkFileCont, ".fam")) &  file.exists(paste0(plinkFileDis, ".fam"))) makeFamFile(inControl=paste0(plinkFileCont, ".fam"), inDisease=paste0(plinkFileDis, ".fam"), inOut)
     #plinkFileCont <- NULL
-    if(is.null(plinkFileCont)){
-      plinkFile <- plinkFileDis
-      inFam <- FALSE
+    if(all(!(is.null(plinkFileCont$midSamples)))){
+      plinkFile <- plinkFileDis$outFile
+      inCont <- NULL
     } else {
-    plinkFile <- getMergePlink(inControl=plinkFileCont, inDisease=plinkFileDis)
+      if(file.exists(paste0(plinkFileCont$outFile, ".fam")) &  file.exists(paste0(plinkFileDis$outFile, ".fam"))) makeFamFile(inControl=paste0(plinkFileCont$outFile, ".fam"), inDisease=paste0(plinkFileDis$outFile, ".fam"), inOut)
+      plinkFile <- getMergePlink(inControl=plinkFileCont$outFile, inDisease=plinkFileDis$outFile)
     }
   } else {
      plinkFile <- plinkFileDis
   }
+  totMidSamples <- c(plinkFileDis$midSamples, plinkFileCont$midSamples)
   isControl <- if(is.null(inCont)) FALSE else TRUE
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=isControl)
@@ -352,7 +386,7 @@ runGRSCalcChrPos <- function(inObjec, inDis, inFam,inCont=NULL){
   #system(command=paste0("rm ", filterMerged, "*"))
   #system(command=paste0("rm ", inFile, "*"))
   #system(command=paste0("rm ", plinkFile,"*"))
-  return(list(score=outScore, hasControl=isControl))
+  return(list(score=outScore, hasControl=isControl, midSamples, totMidSamples))
 }
 
 getScore <- function(inFile){
@@ -417,6 +451,7 @@ checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.ya
 #' @export
 grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inMeta=NULL){
   checkFilesExist(inputFile=inFile, inputRef=inRef, yamlFile=inYamlFile, controlVCF=inControl)
+  #setClassPGSProfile()
   if (!(is.null(inPGSIDS))){
     # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
     file <- data.table::fread(inPGSIDS, stringsAsFactors=F, header=F)
@@ -465,15 +500,16 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
         } else {
           combFrame <- data.table::setDT(list(normFile=unlist(normFile), inFamFile=rep(famFile, times=length(unlist(normFile)))))
         }
-        scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat"), .combine=rbind) %dopar% {
+        scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat")) %dopar% {
           if(getPGSType(inObjec) == "rsID"){
             if(any(("controlFile" %in% names(d)))){
              scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
            } else {
              scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inFam=d$inFamFile)
            }
+           browser()
            if(is.null(scoreFile$score)) return(NULL)
-           return(data.table::data.table(inFile=scoreFile$score,inRecord=getPGSId(inObjec), hasControl=scoreFile$hasControl))
+           return(new("pgsProfile", inFile=scoreFile$score, inRecord=getPGSId(inObjec), hasControl=scoreFile$hasControl, midSamples=scoreFile$midSamples))
           } else {
             if(any(("controlFile" %in% names(d)))){
              scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
@@ -481,16 +517,20 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
              scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile,inFam=d$inFamFile)
             }
            if(is.null(scoreFile$score)) return(NULL)
-           return(data.table::data.table(inFile=scoreFile$score,inRecord=getPGSId(inObjec), hasControl=scoreFile$hasControl))
+           return(new("pgsProfile", inFile=scoreFile$score, inRecord=getPGSId(inObjec), hasControl=scoreFile$hasControl, midSamples=scoreFile$midSamples))
           }
       }
       }
       return(scoreFiles)
     })
 
-  scoreFiles <- unique(rbindlist(scoreFiles))
-  scoreDat <- getAggDf(scoreFiles$inFile, scoreFiles$inRecord)
-  if(!(all(scoreFiles$hasControl))) inControl <- NULL
+  scoreFiles <- do.call("rbind", lapply(scoreFiles , function(x)
+         getAggDf(getPGSProfileInFile(x), 
+                  getPGSProfileInRecord(x),
+                  getPGSProfileMidSamples(x))))
+  allControl <- unlist(lapply(scoreFiles, function(x)getPGSProfileHasControl(x)))
+  if(!(all(allControl))) inControl <- NULL
+  scoreDat <- getAggDf(getPGSProfileInFile(scoreFiles), getPGSProfileInRecord(scoreFiles),getPGSProfileMidSamples(scoreFiles))
   if(nrow(scoreDat) == 0) stop("Unable to generate scores due to input dataset failing QC")
   #assertthat::assert_that(length(intersect(disSample, scoreDat$IID)) != 0)
   #assertthat::assert_that(length(intersect(controlSamples, scoreDat$IID)) != 0)
