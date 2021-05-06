@@ -1,4 +1,7 @@
-getFile <- function(inFile, inRecord, midSamples){
+getFile <- function(inProfile){
+  inFile <- getPGSProfileInFile(inProfile)
+  inRecord <- getPGSProfileInRecord(inProfile)
+  midSamples <- getPGSProfileMidSamples(inProfile)
   if(length(inFile) != 0 & file.exists(inFile)){
     inData <- data.table::fread(inFile, stringsAsFactors=FALSE)
     inData[,PGS_RECORD_ID := inRecord]
@@ -10,8 +13,8 @@ getFile <- function(inFile, inRecord, midSamples){
   }
 }
 
-getAggDf <- function(inFiles, inRecords,midSamples){
-  totalSamples <- data.table::rbindlist(mapply(getFile, inFiles, inRecords, midSamples,SIMPLIFY=FALSE))
+getAggDf <- function(inProfiles){
+  totalSamples <- data.table::rbindlist(lapply(inProfiles, getFile))
   aggSamples <- totalSamples[,sum(as.numeric(SCORESUM)), by=.(IID, PGS_RECORD_ID)]
 
   setnames(aggSamples, "V1", "PRS")

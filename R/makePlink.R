@@ -32,8 +32,6 @@ setPlink <- function(inVCF, inYaml="sample.yaml"){
   system2(command=inPlink, args=c(inType, "--allow-extra-chr", "--mind", "0.1", "--geno", "0.05",  "--vcf-filter", "--make-bed", "--chr", "1-22 XY", "--memory", "4096","--out", outFile), stdout=FALSE)
   if(!(file.exists(paste0(outFile, ".bim"))) & file.exists(paste0(paste0(outFile, ".irem")))){
     return(gsub("$", ".irem", outFile))
-  } else if (!(file.exists(paste0(outFile, ".bim")))){
-    return(NULL)
   } else {
     return(outFile)
   }
@@ -42,7 +40,6 @@ setPlink <- function(inVCF, inYaml="sample.yaml"){
   
 
 getMergePlink <- function(inControl, inDisease,inYaml="sample.yaml"){
-  #inPlink <- "/g/data/jb96/software/plink_1.9_linux_x86_64_20181202/plink"
   inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
   outDir <- if(!(is.null(yaml::read_yaml(inYaml)$tempDir))){
     gsub("\\/$", "",yaml::read_yaml(inYaml)$tempDir)

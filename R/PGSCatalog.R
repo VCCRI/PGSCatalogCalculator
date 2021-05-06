@@ -132,6 +132,10 @@ getPGSProfileMidSamples <- function(inPGS){
   return(inPGS@midSamples)
 }
 
+setPGSProfileMidSamples <- function(inPGS, inSamples){
+  inPGS@midSamples <- inSamples
+  return(inPGS)
+}
 #' @importFrom methods setClass setAs
 setClassPGSGRS <- function(){
   setClassUnion("nullOrDatatable", c("NULL", "data.table"))
@@ -325,7 +329,6 @@ runGRSCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   pgsID <- getPGSId(inObjec)
   filterRsidDis <- filterMerged(inFile=inDis, inName=pgsID, inSNPs=rsIDFile)
   filterMergedDis <- filterMergedPos(inFile=filterRsidDis, inName=pgsID, inSNPs=grsFile)
-  browser()
   plinkFileDis <- getMakePlink(inVCF=filterMergedDis)
   if(all(!(is.null(plinkFileDis$midSamples)))){
     stop("Error creating a PLINK File")
@@ -534,14 +537,13 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
       return(scoreFiles)
     })
 
-  browser()
-  scoreFiles <- do.call("rbind", lapply(scoreFiles , function(x)
-         getAggDf(getPGSProfileInFile(x), 
-                  getPGSProfileInRecord(x),
-                  getPGSProfileMidSamples(x))))
+  scoreFiles <- unique(unlist(scoreFiles))
+  allMidSamples <- unlist(lapply(scoreFiles, function(x) getPGSProfileMidSamples(x)))
+  scoreFiles <- lapply(scoreFiles, function(x)setPGSProfileMidSamples(x, allMidSamples))
+  #Need to dedup objects
   allControl <- unlist(lapply(scoreFiles, function(x)getPGSProfileHasControl(x)))
   if(!(all(allControl))) inControl <- NULL
-  scoreDat <- getAggDf(getPGSProfileInFile(scoreFiles), getPGSProfileInRecord(scoreFiles),getPGSProfileMidSamples(scoreFiles))
+  scoreDat <- getAggDf(scoreFiles)
   if(nrow(scoreDat) == 0) stop("Unable to generate scores due to input dataset failing QC")
   #assertthat::assert_that(length(intersect(disSample, scoreDat$IID)) != 0)
   #assertthat::assert_that(length(intersect(controlSamples, scoreDat$IID)) != 0)
