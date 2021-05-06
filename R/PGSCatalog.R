@@ -1,3 +1,13 @@
+#' An S4 class to represent a PGS Profile
+#'
+#' @slot inFile A length-one character vector
+#' @slot inRecord A length-one character vector
+#' @slot hasControl A length-one boolean vector
+#' @slot midSamples A length-n character vector
+#' @export pgsProfile
+methods::setClassUnion("nullOrCharacter", c("NULL", "character"))
+pgsProfile <- methods::setClass("pgsProfile", slots=(list(inFile="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
+
 getPGSEFO <- function(inFile){
   inData <- readxl::read_xlsx(inFile, sheet=7)
   inData <- data.table::setDT(inData)
@@ -108,15 +118,6 @@ getPGSFiles <- function(inData){
 
 #' @importFrom methods setClass setAs
 setClassPGSProfile <- function(){
-  #' An S4 class to represent a bank account.
-  #'
-  #' @slot inFile A length-one character vector
-  #' @slot inRecord A length-one character vector
-  #' @slot hasControl A length-one boolean vector
-  #' @slot midSamples A length-one boolean vector
-  methods::setClassUnion("nullOrCharacter", c("NULL", "character"))
-  methods::setClass("pgsProfile", slots=(list(inFile="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
-  #methods::setClass("pgsProfile", slots=(list(inFile="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
 }
 getPGSProfileInFile <- function(inPGS){
   return(inPGS@inFile)
@@ -324,6 +325,7 @@ runGRSCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   pgsID <- getPGSId(inObjec)
   filterRsidDis <- filterMerged(inFile=inDis, inName=pgsID, inSNPs=rsIDFile)
   filterMergedDis <- filterMergedPos(inFile=filterRsidDis, inName=pgsID, inSNPs=grsFile)
+  browser()
   plinkFileDis <- getMakePlink(inVCF=filterMergedDis)
   if(all(!(is.null(plinkFileDis$midSamples)))){
     stop("Error creating a PLINK File")
@@ -342,7 +344,7 @@ runGRSCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   } else {
     plinkFile <- plinkFileDis$outFile
   }
-
+  if(is.null(plinkFileCont$midSamples))
   totMidSamples <- c(plinkFileDis$midSamples, plinkFileCont$midSamples)
   isControl <- if(is.null(inCont)) FALSE else TRUE
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
@@ -351,7 +353,7 @@ runGRSCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   #system(command=paste0("rm ", inFile, "*"))
   ##system(command=paste0("rm ", filterRsid,"*"))
   #system(command=paste0("rm ", plinkFile,"*"))
-  return(list(score=outScore, hasControl=isControl,midSamples=totMidSamples))
+  return(new("pgsProfile", inFile=outScore, inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
 }
 
 runGRSCalcChrPos <- function(inObjec, inDis, inFam,inCont=NULL){
@@ -386,7 +388,13 @@ runGRSCalcChrPos <- function(inObjec, inDis, inFam,inCont=NULL){
   #system(command=paste0("rm ", filterMerged, "*"))
   #system(command=paste0("rm ", inFile, "*"))
   #system(command=paste0("rm ", plinkFile,"*"))
-  return(list(score=outScore, hasControl=isControl, midSamples, totMidSamples))
+  print("test")
+  print(outScore)
+  print(getPGSId(inObjec))
+  print(isControl)
+  print(totMidSamples)
+  print("test 2")
+  return(new("pgsProfile", inFile=outScore, inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
 }
 
 getScore <- function(inFile){
@@ -500,30 +508,33 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
         } else {
           combFrame <- data.table::setDT(list(normFile=unlist(normFile), inFamFile=rep(famFile, times=length(unlist(normFile)))))
         }
-        scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat")) %dopar% {
+        #scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat")) %dopar% {
+        scoreFiles <- apply(unique(combFrame), 1, function(d){
+          d <- as.list(d)
           if(getPGSType(inObjec) == "rsID"){
             if(any(("controlFile" %in% names(d)))){
              scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
            } else {
              scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inFam=d$inFamFile)
            }
-           browser()
-           if(is.null(scoreFile$score)) return(NULL)
-           return(new("pgsProfile", inFile=scoreFile$score, inRecord=getPGSId(inObjec), hasControl=scoreFile$hasControl, midSamples=scoreFile$midSamples))
+           if(is.null(getPGSProfileInFile(scoreFile))) return(NULL)
+           print(scoreFile)
+           return(scoreFile)
           } else {
             if(any(("controlFile" %in% names(d)))){
              scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
             } else {
              scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile,inFam=d$inFamFile)
             }
-           if(is.null(scoreFile$score)) return(NULL)
-           return(new("pgsProfile", inFile=scoreFile$score, inRecord=getPGSId(inObjec), hasControl=scoreFile$hasControl, midSamples=scoreFile$midSamples))
+           if(is.null(getPGSProfileInFile(scoreFile))) return(NULL)
+           return(scoreFile)
           }
-      }
+      })
       }
       return(scoreFiles)
     })
 
+  browser()
   scoreFiles <- do.call("rbind", lapply(scoreFiles , function(x)
          getAggDf(getPGSProfileInFile(x), 
                   getPGSProfileInRecord(x),

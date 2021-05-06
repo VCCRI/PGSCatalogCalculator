@@ -20,6 +20,7 @@ setPlink <- function(inVCF, inYaml="sample.yaml"){
   #inPlink <- "/g/data/jb96/software/plink_1.9_linux_x86_64_20181202/plink"
   inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
   ##ToDO prettifry paste
+  if(is.null(inVCF)) return(NULL)
   if(grepl(".vcf.gz", inVCF)){
     inType <- paste("--vcf", inVCF, "--vcf-half-call h")
     outFile <- gsub("\\.vcf\\.gz", "_plink", inVCF)
@@ -45,7 +46,7 @@ getMergePlink <- function(inControl, inDisease,inYaml="sample.yaml"){
   inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
   outDir <- if(!(is.null(yaml::read_yaml(inYaml)$tempDir))){
     gsub("\\/$", "",yaml::read_yaml(inYaml)$tempDir)
-  } else if(is.null(yaml::read_yaml(inYaml)$outputDir)){
+  } else if(!(is.null(yaml::read_yaml(inYaml)$outputDir))){
     gsub("\\/$", "",yaml::read_yaml(inYaml)$outputDir)
   } else {
     dirname(inDisease)

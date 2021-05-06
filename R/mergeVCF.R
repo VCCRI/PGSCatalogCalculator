@@ -55,6 +55,7 @@ writeFam <- function(inFam, inFile){
 filterMerged <- function(inFile, inName, inSNPs, inYaml="sample.yaml"){
   outFile <- gsub("\\.vcf\\.gz", paste0("_",inName, "_filt.vcf.gz"), inFile)
   bcftools <- if(is.null(inYaml)) Sys.getenv("bcftools") else yaml::read_yaml(inYaml)$bcftools
+  if(length(outFile) == 0) return(outFile)
   if(!file.exists(outFile)){
     system2(command=bcftools, args=c("view", "-i", paste0("ID=@", inSNPs), inFile, "-o", outFile, "-O", "z","--threads", "1"), stdout=FALSE)
     print("Filtering BCF")
@@ -79,15 +80,16 @@ filterMergedPos <- function(inFile, inName, inSNPs, inYaml="sample.yaml"){
   ## TODO Implement using python script for the time being
   bcftools <- if(is.null(inYaml)) Sys.getenv("bcftools") else yaml::read_yaml(inYaml)$bcftools
   outFile <- gsub(paste0("(_", inName, "_filt", ")?\\.vcf\\.gz"), paste0("_",inName, ".bcf"), inFile)
+  if(length(inFile) ==0) return(NULL)
   ##TODO Implement if file exists check
-    print("PGS Catalog Start")
-    #baseCommand <- paste0("python3 cyvf_pgs_catalog.py --score ", inSNPs, " --header --out ", outFile, " --vcf ", inFile)
-    system2(command="python2", args=c(system.file("extdata", "vcf_pgs_catalog.py", package="PGSCatalogDownloader"),"--score", inSNPs, "--header", "--out", outFile, "--vcf", inFile), stdout=FALSE)
-    print("PGS Catalog End")
-    Sys.time()
-    system2(command=bcftools, args=c("index", "-f", outFile),stdout=FALSE)
-    print("Start Index")
-    Sys.time()
+  print("PGS Catalog Start")
+  #baseCommand <- paste0("python3 cyvf_pgs_catalog.py --score ", inSNPs, " --header --out ", outFile, " --vcf ", inFile)
+  system2(command="python2", args=c(system.file("extdata", "vcf_pgs_catalog.py", package="PGSCatalogDownloader"),"--score", inSNPs, "--header", "--out", outFile, "--vcf", inFile), stdout=FALSE)
+  print("PGS Catalog End")
+  Sys.time()
+  system2(command=bcftools, args=c("index", "-f", outFile),stdout=FALSE)
+  print("Start Index")
+  Sys.time()
   return(outFile)
 }
 
