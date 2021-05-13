@@ -530,6 +530,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
              scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile,inFam=d$inFamFile)
             }
            if(is.null(getPGSProfileInFile(scoreFile))) return(NULL)
+           print(scoreFile)
            return(scoreFile)
           }
       })
