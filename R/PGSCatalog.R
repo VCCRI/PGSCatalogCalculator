@@ -475,6 +475,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   }
   inspecTemp <- getLatestMeta(inMeta)
   inspecFile <- readRDS(inspecTemp)
+  if(length(intersect(inPGSID, lapply(inspecFile, getPGSId))) == 0) stop("Cannot Find PGS ID in metadata, please check PGS ID exists or update metatdata: getEUFiles()")
   outDir <- if(!(is.null(yaml::read_yaml(inYamlFile)$tempDir))){
     gsub("\\/$", "",yaml::read_yaml(inYamlFile)$tempDir)
   } else if(!(is.null(yaml::read_yaml(inYamlFile)$outputDir))){
@@ -511,9 +512,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
         } else {
           combFrame <- data.table::setDT(list(normFile=unlist(normFile), inFamFile=rep(famFile, times=length(unlist(normFile)))))
         }
-        #scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat")) %dopar% {
-        scoreFiles <- apply(unique(combFrame), 1, function(d){
-          d <- as.list(d)
+        scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat")) %dopar% {
           if(getPGSType(inObjec) == "rsID"){
             if(any(("controlFile" %in% names(d)))){
              scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
@@ -532,7 +531,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
            if(is.null(getPGSProfileInFile(scoreFile))) return(NULL)
            return(scoreFile)
           }
-      })
+      }
       }
       return(scoreFiles)
     })
