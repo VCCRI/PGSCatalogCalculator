@@ -390,9 +390,9 @@ filterBCFCalcPos <- function(inObjec, inDis, inFam,inCont=NULL){
       plinkFile <- getMergePlink(inControl=plinkFileCont$outFile, inDisease=plinkFileDis$outFile)
     }
   } else {
-     plinkFile <- plinkFileDis
+     plinkFile <- plinkFileDis$outFile
   }
-  #totMidSamples <- c(plinkFileDis$midSamples, plinkFileCont$midSamples)
+  totMidSamples <- if(is.null(inCont)) plinkFileDis$midSamples else c(plinkFileDis$midSamples, plinkFileCont$midSamples)
   isControl <- if(is.null(inCont)) FALSE else TRUE
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
@@ -401,7 +401,6 @@ filterBCFCalcPos <- function(inObjec, inDis, inFam,inCont=NULL){
   #system(command=paste0("rm ", inFile, "*"))
   #system(command=paste0("rm ", plinkFile,"*"))
   print("test")
-  print(outScore)
   print(getPGSId(inObjec))
   print(isControl)
   print(totMidSamples)
@@ -416,7 +415,6 @@ runGRS <- function(inProfile){
   plinkFile <- getPGSProfilePlinkFile(inProfile)
   grsFile <- getPGSProfileGRS(inProfile)
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=isControl)
-  browser()
   return(new("pgsProfile", plinkFile = plinkFile, inFile=outScore, inGRS=grsFile, inRecord=inRec, hasControl=isControl, midSamples=midSamples))
 }
 getScore <- function(inFile){
@@ -593,7 +591,9 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
     scoreDat <- scoreDat[IID %in% as.character(disSample),]
   }
   if(nrow(scoreDat) == 0) stop("Unable to generate scores due to input dataset failing QC")
-  if(nrow(inControl) == 0) stop("Unable to generate scores due to control dataset failing QC")
+  if(!is.null(inControl)){
+    if(nrow(inControl) == 0) stop("Unable to generate scores due to control dataset failing QC")
+  }
   setPlots(scoreDat, inControl, inOutDir=outDir)
  
 }
