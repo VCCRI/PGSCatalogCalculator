@@ -35,9 +35,15 @@ readScore <- function(inData, inControl, inNumBins=4){
   assertthat::assert_that(all.equal(sort(unique(inTotal$subject_type)), c("case", "control")))
   inTotal <- tryCatch({
     inTotal$bin_PRS <- -1
-    breaksD <- as.numeric(as.character(quantile(as.numeric(inTotal[subject_type == "control",PRS]), probs = seq(0.25, 1, by = 1/inNumBins))))
+    breaksD <- unique(as.numeric(as.character(quantile(as.numeric(inTotal[subject_type == "control",PRS]), probs = seq(0.25, 1, by = 1/inNumBins)))))
     seqC <- as.numeric(seq(0.25,1-1/inNumBins, by=1/inNumBins))
-    inTotal[,bin_PRS := as.numeric(as.character(cut(as.numeric(PRS), breaks=breaksD, labels=seqC, include.lowest = TRUE, right=TRUE)))]
+    if(length(unique(breaksD)) < 2){
+      inNumBins <- length(unique(inTotal$PRS))-1
+      seqC <- as.numeric(seq(1/inNumBins,1-1/inNumBins, by=1/inNumBins))
+      inTotal[,bin_PRS := as.numeric(as.character(cut(as.numeric(PRS), breaks=c(sort(unique(inTotal$PRS)))[1:inNumBins], labels=seqC, include.lowest = TRUE, right=TRUE)))]
+    } else {
+      inTotal[,bin_PRS := as.numeric(as.character(cut(as.numeric(PRS), breaks=unique(breaksD), labels=seqC, include.lowest = TRUE, right=TRUE)))]
+    }
     inTotal[,bin_PRS := ifelse(is.na(bin_PRS), 1, bin_PRS)]
     assertthat::assert_that(nrow(inTotal[bin_PRS == -1,]) == 0)
     inTotal
@@ -49,8 +55,8 @@ readScore <- function(inData, inControl, inNumBins=4){
   inTotal[,is_bott := ifelse(bin_PRS == minBin, TRUE,FALSE)]
   assertthat::assert_that(length(unique(inTotal[is_bott == TRUE, bin_PRS])) == 1)
   assertthat::assert_that(length(unique(inTotal[is_bott == FALSE, bin_PRS])) == (inNumBins-1))
-  assertthat::assert_that(!(c("0.25") %in% as.character(unique(inTotal[is_bott == FALSE, bin_PRS]))))
-  assertthat::assert_that(c("0.25") %in% as.character(unique(inTotal[is_bott == TRUE, bin_PRS])))
+  #assertthat::assert_that(!(c("0.25") %in% as.character(unique(inTotal[is_bott == FALSE, bin_PRS]))))
+  #assertthat::assert_that(c("0.25") %in% as.character(unique(inTotal[is_bott == TRUE, bin_PRS])))
   #assert_that(nrow(unique(inTotal)) == nrow(inTotal))
   inTotal <- unique(inTotal)
   #fwrite(inTotal[bin_PRS == 0.75& subject_type=="case",],paste0("~/quantilePlot/",unique(inTotal$PGS_RECORD_ID), ".csv"))
@@ -145,6 +151,10 @@ getPlots <- function(inDis, inControl, inOutDir=NULL){
       colnames(needScore) <- c("Sample", "Subject Type", "PRS","Risk")
     }
     fwrite(needScore, paste(inOutDir, "sample_out.csv", sep="/"))
+    if(length(unique(needScore$PRS)) <= 4){
+      logger::log_info(sprintf("Not Able to create quantiles based off data"))
+      return(NULL)
+    }
     inContTable <- lapply(1:4, function(x)createTable(inQuant=x, inData=scoreData))
     orDF <- do.call("rbind", lapply(inContTable, getORContT))
     orDF <- setDT(data.frame(orDF, stringsAsFactors=F))

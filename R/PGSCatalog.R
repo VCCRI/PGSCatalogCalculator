@@ -416,6 +416,7 @@ runGRS <- function(inProfile){
   plinkFile <- getPGSProfilePlinkFile(inProfile)
   grsFile <- getPGSProfileGRS(inProfile)
   outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=isControl)
+  browser()
   return(new("pgsProfile", plinkFile = plinkFile, inFile=outScore, inGRS=grsFile, inRecord=inRec, hasControl=isControl, midSamples=midSamples))
 }
 getScore <- function(inFile){
@@ -478,7 +479,7 @@ checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.ya
 }
   
 #' @export
-grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inMeta=NULL, debug=FALSE){
+grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inMeta=NULL, debug=TRUE){
   checkFilesExist(inputFile=inFile, inputRef=inRef, yamlFile=inYamlFile, controlVCF=inControl)
   #setClassPGSProfile()
   if(debug){
@@ -512,14 +513,15 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
            inRef=inRef,
            outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inFile)),sep="/"),
            inLog=logFile,
-           inYaml=inYamlFile)
+           inYaml=inYamlFile,
+           inCL=inCL)
   if(!(is.null(inControl))) {
     controlFile <- 
       baseNorm(inVCF=inControl,
              inRef=inRef,
              outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inControl)),sep="/"),
              inLog=logFile,
-             inYaml=inYamlFile)
+             inYaml=inYamlFile, inCL=inCL)
     disSample <- getDisSample(inControl=controlFile[[1]], inDisease=normFile[[1]])
     controlSamples <- getDisSample(inDisease=controlFile[[1]], inControl=normFile[[1]])
     famFile <- TRUE
@@ -573,7 +575,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   allControl <- unlist(lapply(scoreFiles, function(x)getPGSProfileHasControl(x)))
   if(!(all(allControl))) inControl <- NULL
   scoreDat <- getAggDf(scoreFiles)
-  if(nrow(scoreDat) == 0) stop("Unable to generate scores due to input dataset failing QC")
+  if(nrow(scoreDat) == 0) stop("Unable to generate scores due to input datasets failing QC")
   #assertthat::assert_that(length(intersect(disSample, scoreDat$IID)) != 0)
   #assertthat::assert_that(length(intersect(controlSamples, scoreDat$IID)) != 0)
   #if(!(is.null(inControl))){
@@ -590,6 +592,8 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
     inControl <- scoreDat[!(IID %in% as.character(disSample)),]
     scoreDat <- scoreDat[IID %in% as.character(disSample),]
   }
+  if(nrow(scoreDat) == 0) stop("Unable to generate scores due to input dataset failing QC")
+  if(nrow(inControl) == 0) stop("Unable to generate scores due to control dataset failing QC")
   setPlots(scoreDat, inControl, inOutDir=outDir)
  
 }

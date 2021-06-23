@@ -20,6 +20,8 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inLog,inCL){
     if(!(file.exists(filtSNP))){
       sprintf("Started Filtering on Chrom %s for %s", inChrom, inVCF)
       filterSNP <- system2(command=bcftools, args=c('view', inVCF, '-r', inChrom, '-O', 'z','-o', filtSNP, '--threads', '2'))
+      baseIndex(filtSNP, inYaml)
+      
       logger::log_info(sprintf("End Filtering on Chrom %s for %s", inChrom, inVCF))
     }
     if(!(file.exists(filtSNP))){
@@ -36,7 +38,7 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inLog,inCL){
     #filterSNP <- system(command=paste('bcftools view', inVCF, '-r', inChrom, '-O z -o', filtSNP, '--threads 2'))
     baseIndex(inDecom, inYaml)
     file.remove(filtSNP)
-    logger:log_info(sprintf("Started Decompose Blocksub on Chrom %s for %s", inChrom, inVCF))
+    logger::log_info(sprintf("Started Decompose Blocksub on Chrom %s for %s", inChrom, inVCF))
     invisible(capture.output(system2(command=baseCommand, args=c("decompose_blocksub", "-o", inDecomBlock, "-a", inDecom), stdout=FALSE)))
     logger::log_info(sprintf("Ended Decompose Blocksub on Chrom %s for %s", inChrom, inVCF))
     if(!(file.exists(inDecomBlock))){
