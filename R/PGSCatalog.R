@@ -1,12 +1,13 @@
 #' An S4 class to represent a PGS Profile
 #'
+#' @slot plinkFile A length-one character vector
 #' @slot inFile A length-one character vector
 #' @slot inRecord A length-one character vector
 #' @slot hasControl A length-one boolean vector
 #' @slot midSamples A length-n character vector
 #' @export pgsProfile
 methods::setClassUnion("nullOrCharacter", c("NULL", "character"))
-pgsProfile <- methods::setClass("pgsProfile", slots=(list(inFile="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
+pgsProfile <- methods::setClass("pgsProfile", slots=(list(plinkFile="nullOrCharacter",inFile="nullOrCharacter", inGRS="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
 
 getPGSEFO <- function(inFile){
   inData <- readxl::read_xlsx(inFile, sheet=7)
@@ -122,6 +123,12 @@ setClassPGSProfile <- function(){
 getPGSProfileInFile <- function(inPGS){
   return(inPGS@inFile)
 }
+getPGSProfilePlinkFile <- function(inPGS){
+  return(inPGS@plinkFile)
+}
+getPGSProfileGRS <- function(inPGS){
+  return(inPGS@inGRS)
+}
 getPGSProfileInRecord <- function(inPGS){
   return(inPGS@inRecord)
 }
@@ -132,6 +139,10 @@ getPGSProfileMidSamples <- function(inPGS){
   return(inPGS@midSamples)
 }
 
+setPGSProfileInFile <- function(inPGS, inFiles){
+  inFiles <- inPGS@inFile
+  return(inPGS)
+}
 setPGSProfileMidSamples <- function(inPGS, inSamples){
   inPGS@midSamples <- inSamples
   return(inPGS)
@@ -323,7 +334,7 @@ getNormControl <- function(){
   return(normControl)
 }
 
-runGRSCalc <- function(inObjec, inDis,inFam,inCont=NULL){
+filterBCFCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   grsFile <- getGRSInputRsID(inObjec)
   rsIDFile <- getRSIds(inObjec)
   pgsID <- getPGSId(inObjec)
@@ -351,15 +362,14 @@ runGRSCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   totMidSamples <- c(plinkFileDis$midSamples, plinkFileCont$midSamples)
   isControl <- if(is.null(inCont)) FALSE else TRUE
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
-  outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=isControl)
   ##system(command=paste0("rm ", filterMerged, "*"))
   #system(command=paste0("rm ", inFile, "*"))
   ##system(command=paste0("rm ", filterRsid,"*"))
   #system(command=paste0("rm ", plinkFile,"*"))
-  return(new("pgsProfile", inFile=outScore, inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
+  return(new("pgsProfile", plinkFile = plinkFile, inFile=NULL, inGRS=grsFile,inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
 }
 
-runGRSCalcChrPos <- function(inObjec, inDis, inFam,inCont=NULL){
+filterBCFCalcPos <- function(inObjec, inDis, inFam,inCont=NULL){
   grsFile <- getGRSInputChrPos(inObjec)
   regionId <- getChrPos(inObjec)
   pgsID <- getPGSId(inObjec)
@@ -380,26 +390,33 @@ runGRSCalcChrPos <- function(inObjec, inDis, inFam,inCont=NULL){
       plinkFile <- getMergePlink(inControl=plinkFileCont$outFile, inDisease=plinkFileDis$outFile)
     }
   } else {
-     plinkFile <- plinkFileDis
+     plinkFile <- plinkFileDis$outFile
   }
-  totMidSamples <- c(plinkFileDis$midSamples, plinkFileCont$midSamples)
+  totMidSamples <- if(is.null(inCont)) plinkFileDis$midSamples else c(plinkFileDis$midSamples, plinkFileCont$midSamples)
   isControl <- if(is.null(inCont)) FALSE else TRUE
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
-  outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=isControl)
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
   #outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=inCont)
   #system(command=paste0("rm ", filterMerged, "*"))
   #system(command=paste0("rm ", inFile, "*"))
   #system(command=paste0("rm ", plinkFile,"*"))
   print("test")
-  print(outScore)
   print(getPGSId(inObjec))
   print(isControl)
   print(totMidSamples)
   print("test 2")
-  return(new("pgsProfile", inFile=outScore, inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
+  return(new("pgsProfile", plinkFile = plinkFile, inFile=NULL, inGRS=grsFile,inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
 }
 
+runGRS <- function(inProfile){
+  inRec <- getPGSProfileInRecord(inProfile)
+  isControl <- getPGSProfileHasControl(inProfile)
+  midSamples <- getPGSProfileMidSamples(inProfile)
+  plinkFile <- getPGSProfilePlinkFile(inProfile)
+  grsFile <- getPGSProfileGRS(inProfile)
+  outScore <- plinkGRS(inFile= plinkFile, inGRS=grsFile, inControl=isControl)
+  return(new("pgsProfile", plinkFile = plinkFile, inFile=outScore, inGRS=grsFile, inRecord=inRec, hasControl=isControl, midSamples=midSamples))
+}
 getScore <- function(inFile){
   filtFile <- gsub(paste0(inDir, "/"), "", inFile)
   filtFile <- gsub("_score\\.profile", "", filtFile)
@@ -460,9 +477,14 @@ checkFilesExist <- function(inputFile=NULL, inputRef=NULL, yamlFile = "sample.ya
 }
   
 #' @export
-grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inMeta=NULL){
+grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, inYamlFile="sample.yaml", inCL=NULL, inControl=NULL, inMeta=NULL, debug=TRUE){
   checkFilesExist(inputFile=inFile, inputRef=inRef, yamlFile=inYamlFile, controlVCF=inControl)
   #setClassPGSProfile()
+  if(debug){
+    logFile <- paste0(yaml::read_yaml(inYamlFile)$outputDir, "/output_log.log")
+  } else {
+    logFile <- NULL
+  }
   if (!(is.null(inPGSIDS))){
     # This is first because of weird bug where pgs-id value replicates pgs-id-file even though it is null
     file <- data.table::fread(inPGSIDS, stringsAsFactors=F, header=F)
@@ -489,13 +511,16 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
     baseNorm(inVCF=inFile,
            inRef=inRef,
            outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inFile)),sep="/"),
-           inYaml=inYamlFile)
+           inLog=logFile,
+           inYaml=inYamlFile,
+           inCL=inCL)
   if(!(is.null(inControl))) {
     controlFile <- 
       baseNorm(inVCF=inControl,
              inRef=inRef,
              outFile=paste(outDir, gsub("\\.[a-zA-Z']+(\\.gz)?$","_norm", basename(inControl)),sep="/"),
-             inYaml=inYamlFile)
+             inLog=logFile,
+             inYaml=inYamlFile, inCL=inCL)
     disSample <- getDisSample(inControl=controlFile[[1]], inDisease=normFile[[1]])
     controlSamples <- getDisSample(inDisease=controlFile[[1]], inControl=normFile[[1]])
     famFile <- TRUE
@@ -515,20 +540,21 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
         scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat")) %dopar% {
           if(getPGSType(inObjec) == "rsID"){
             if(any(("controlFile" %in% names(d)))){
-             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
+             scoreFile <- filterBCFCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
            } else {
-             scoreFile <- runGRSCalc(inObjec=inObjec, inDis=d$normFile, inFam=d$inFamFile)
+             scoreFile <- filterBCFCalc(inObjec=inObjec, inDis=d$normFile, inFam=d$inFamFile)
            }
-           if(is.null(getPGSProfileInFile(scoreFile))) return(NULL)
+           if(is.null(getPGSProfilePlinkFile(scoreFile))) return(NULL)
            print(scoreFile)
            return(scoreFile)
           } else {
             if(any(("controlFile" %in% names(d)))){
-             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
+             scoreFile <- filterBCFCalcPos(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
             } else {
-             scoreFile <- runGRSCalcChrPos(inObjec=inObjec, inDis=d$normFile,inFam=d$inFamFile)
+             scoreFile <- filterBCFCalcPos(inObjec=inObjec, inDis=d$normFile,inFam=d$inFamFile)
             }
-           if(is.null(getPGSProfileInFile(scoreFile))) return(NULL)
+           if(is.null(getPGSProfilePlinkFile(scoreFile))) return(NULL)
+           print(scoreFile)
            return(scoreFile)
           }
       }
@@ -537,13 +563,17 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
     })
 
   scoreFiles <- unique(unlist(scoreFiles))
-  allMidSamples <- unlist(lapply(scoreFiles, function(x) getPGSProfileMidSamples(x)))
-  scoreFiles <- lapply(scoreFiles, function(x)setPGSProfileMidSamples(x, allMidSamples))
+  allFiles <- unlist(lapply(scoreFiles, getPGSProfilePlinkFile))
+  if(length(allFiles) == 0) stop("No Relevant Scores")
+  mergedFile <- getMergePlinkList(allFiles)
+  mergedQCFile <- qcFile(mergedFile)
+  allFiles <- unlist(mapply(setPGSProfileInFile, inPGS=scoreFiles, inFiles=mergedQCFile, SIMPLIFY=FALSE))
+  scoreFiles <- unlist(lapply(allFiles, runGRS))
   #Need to dedup objects
   allControl <- unlist(lapply(scoreFiles, function(x)getPGSProfileHasControl(x)))
   if(!(all(allControl))) inControl <- NULL
   scoreDat <- getAggDf(scoreFiles)
-  if(nrow(scoreDat) == 0) stop("Unable to generate scores due to input dataset failing QC")
+  if(nrow(scoreDat) == 0) stop("Unable to generate scores due to input datasets failing QC")
   #assertthat::assert_that(length(intersect(disSample, scoreDat$IID)) != 0)
   #assertthat::assert_that(length(intersect(controlSamples, scoreDat$IID)) != 0)
   #if(!(is.null(inControl))){
@@ -559,6 +589,10 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   if(!(is.null(inControl))){
     inControl <- scoreDat[!(IID %in% as.character(disSample)),]
     scoreDat <- scoreDat[IID %in% as.character(disSample),]
+  }
+  if(nrow(scoreDat) == 0) stop("Unable to generate scores due to input dataset failing QC")
+  if(!is.null(inControl)){
+    if(nrow(inControl) == 0) stop("Unable to generate scores due to control dataset failing QC")
   }
   setPlots(scoreDat, inControl, inOutDir=outDir)
  

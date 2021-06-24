@@ -1,4 +1,4 @@
-baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inCL){
+baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inLog,inCL){
   dir.create(dirname(outFile), showWarnings=FALSE)
   chrom <- c(as.character(1:22), "X", "Y")
   #chrom <- c(as.character(2:22), "X", "Y")
@@ -13,33 +13,43 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inCL){
     for (x in c("Decom", "DecomBlock", "DBN")){
       assign(paste0("in", x), paste0(outFile, "_", inChrom, "_", x, ".vcf.gz")) 
     }
-    
     if(file.exists(inDBN)){
+      logger::log_info(sprintf("Skipped Normalisation on Chrom %s for %s", inChrom, inVCF))
       return(inDBN)
     }
     if(!(file.exists(filtSNP))){
+      sprintf("Started Filtering on Chrom %s for %s", inChrom, inVCF)
       filterSNP <- system2(command=bcftools, args=c('view', inVCF, '-r', inChrom, '-O', 'z','-o', filtSNP, '--threads', '2'))
+      baseIndex(filtSNP, inYaml)
+      
+      logger::log_info(sprintf("End Filtering on Chrom %s for %s", inChrom, inVCF))
     }
     if(!(file.exists(filtSNP))){
        stop("Cannot access file for filtering")
     }
     #filterSNP <- system(command=paste('bcftools view', inVCF, '-r', inChrom, '-O z -o', filtSNP, '--threads 2'))
     #baseCommand <- "/g/data3/jb96/software/vt/vt"
+    logger::log_info(sprintf("Started Decompose on Chrom %s for %s", inChrom, inVCF))
     invisible(capture.output(system2(command=baseCommand, args=c("decompose", "-o", inDecom, "-s", filtSNP), stdout=FALSE)))
+    logger::log_info(sprintf("Ended Decompose on Chrom %s for %s", inChrom, inVCF))
     if(!(file.exists(inDecom))){
        stop("Cannot access file to decompose")
     }
     #filterSNP <- system(command=paste('bcftools view', inVCF, '-r', inChrom, '-O z -o', filtSNP, '--threads 2'))
     baseIndex(inDecom, inYaml)
     file.remove(filtSNP)
+    logger::log_info(sprintf("Started Decompose Blocksub on Chrom %s for %s", inChrom, inVCF))
     invisible(capture.output(system2(command=baseCommand, args=c("decompose_blocksub", "-o", inDecomBlock, "-a", inDecom), stdout=FALSE)))
+    logger::log_info(sprintf("Ended Decompose Blocksub on Chrom %s for %s", inChrom, inVCF))
     if(!(file.exists(inDecomBlock))){
        stop("Cannot access file to decompose blocksub")
     }
     file.remove(inDecom)
     file.remove(paste0(inDecom, ".csi"))
     baseIndex(inDecomBlock, inYaml)
+    logger::log_info(sprintf("Started Normalisation on Chrom %s for %s", inChrom, inVCF))
     invisible(capture.output(system2(command=baseCommand, args=c("normalize", "-r", inRef, "-o", inDBN, inDecomBlock, "-q"), stdout=FALSE)))
+    logger::log_info(sprintf("Ended Normalisation Blocksub on Chrom %s for %s", inChrom, inVCF))
     if(!(file.exists(inDBN))){
        stop("Cannot access file outputted from normalisatiion")
     }

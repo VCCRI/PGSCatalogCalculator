@@ -29,15 +29,54 @@ setPlink <- function(inVCF, inYaml="sample.yaml"){
     outFile <- gsub("\\.bcf", "_plink", inVCF)
  }
   #baseCommand <- paste(inPlink, inType, " --allow-extra-chr --maf 0.05 --mind 0.1 --geno 0.1 --hwe 1e-6 --vcf-filter --make-bed --chr 1-22 XY --memory 4096 --out", outFile)
-  system2(command=inPlink, args=c(inType, "--allow-extra-chr", "--mind", "0.1", "--geno", "0.05",  "--vcf-filter", "--make-bed", "--chr", "1-22 XY", "--memory", "4096","--out", outFile), stdout=FALSE)
-  if(!(file.exists(paste0(outFile, ".bim"))) & file.exists(paste0(paste0(outFile, ".irem")))){
-    return(gsub("$", ".irem", outFile))
-  } else {
-    return(outFile)
-  }
+  #system2(command=inPlink, args=c(inType, "--allow-extra-chr", "--vcf-filter", "--make-bed", "--chr", "1-22 XY", "--memory", "4096","--out", outFile), stdout=FALSE)
+  system2(command=inPlink, args=c(inType, "--allow-extra-chr", "--vcf-filter", "--const-fid", "0", "--make-bed", "--chr", "1-22 XY", "--memory", "4096","--out", outFile), stdout=FALSE)
+  return(outFile)
 }
 
+getMergePlinkList <- function(mergeList,inYaml="sample.yaml"){
+  firstEl <- mergeList[1]
+  inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
+  outDir <- if(!(is.null(yaml::read_yaml(inYaml)$tempDir))){
+    gsub("\\/$", "",yaml::read_yaml(inYaml)$tempDir)
+  } else if(!(is.null(yaml::read_yaml(inYaml)$outputDir))){
+    gsub("\\/$", "",yaml::read_yaml(inYaml)$outputDir)
+  } else {
+    dirname(firstEl)
+  }
+  if(length(mergeList) == 1){
+    outFile <- paste(outDir, gsub("_plink","_total_plink", basename(firstEl)),sep="/")
+    system2(command=inPlink, args=c("--bfile", firstEl, "--make-bed", "--allow-no-sex", "--memory", "4096","--out", outFile), stdout=FALSE)
+    return(outFile)
+    
+  } else {
+    outFile <- paste(outDir, gsub("_plink","_total_plink", basename(firstEl)),sep="/")
+    mergeList <- mergeList[2:length(mergeList)]
+    mergeFile <- tempfile()
+    writeLines(mergeList, mergeFile)
+    #baseCommand <- paste(inPlink, inType, " --allow-extra-chr --maf 0.05 --mind 0.1 --geno 0.1 --hwe 1e-6 --vcf-filter --make-bed --chr 1-22 XY --memory 4096 --out", outFile)
+    system2(command=inPlink, args=c("--bfile", firstEl, "--merge-list", mergeFile, "--make-bed", "--allow-no-sex", "--memory", "4096","--out", outFile), stdout=FALSE)
+    return(outFile)
+  }
+
+}
   
+qcFile <- function(inFile, inYaml="sample.yaml"){
+  inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
+  outDir <- if(!(is.null(yaml::read_yaml(inYaml)$tempDir))){
+    gsub("\\/$", "",yaml::read_yaml(inYaml)$tempDir)
+  } else if(!(is.null(yaml::read_yaml(inYaml)$outputDir))){
+    gsub("\\/$", "",yaml::read_yaml(inYaml)$outputDir)
+  } else {
+    dirname(inFile)
+  }
+  outFile <- paste(outDir, gsub("_plink","_qc_plink", basename(inFile)),sep="/")
+  ##ToDO prettifry paste
+  if(is.null(inFile)) return(NULL)
+  system2(command=inPlink, args=c("--bfile", inFile, "--allow-extra-chr", "--mind", "0.1", "--geno", "0.05",  "--make-bed", "--chr", "1-22 XY", "--memory", "4096","--out", outFile), stdout=FALSE)
+  return(outFile)
+}
+
 
 getMergePlink <- function(inControl, inDisease,inYaml="sample.yaml"){
   inPlink <- if(is.null(inYaml)) Sys.getenv("plink") else yaml::read_yaml(inYaml)$plink
