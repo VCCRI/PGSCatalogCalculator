@@ -6,7 +6,7 @@ mergeVCF <- function(inControl, inDisease, inYaml="sample.yaml"){
   if(!inDiseaseIndex) baseIndex(inDisease, inYaml)
   if(!inControlIndex) baseIndex(inControl, inYaml)
   bcftools <- if(is.null(inYaml)) Sys.getenv("bcftools") else yaml::read_yaml(inYaml)$bcftools
-  baseCommand <- paste(bcftools, "merge --missing-to-ref -m none  --force-samples", inControl, inDisease, "-o", outFile, "-O z --threads 5")
+  baseCommand <- paste(bcftools, "merge --missing-to-ref -m none  --force-samples", inControl, inDisease, "-o", outFile, "-O b --threads 5")
   system(command=baseCommand)
   baseIndex(outFile, inYaml)
   return(outFile)
@@ -14,6 +14,10 @@ mergeVCF <- function(inControl, inDisease, inYaml="sample.yaml"){
 
 getDisSample <- function(inControl, inDisease, inYaml="sample.yaml"){
   bcftools <- if(is.null(inYaml)) Sys.getenv("bcftools") else yaml::read_yaml(inYaml)$bcftools
+  inControlIndex <- file.exists(paste0(inControl, ".csi"))
+  inDiseaseIndex <- file.exists(paste0(inDisease, ".csi"))
+  if(!inDiseaseIndex) baseIndex(inDisease, inYaml)
+  if(!inControlIndex) baseIndex(inControl, inYaml)
   # TODO Check if there is any overlap in control or diseased samples
   controlSamples <- system(paste(bcftools,"query -l", inControl), intern=TRUE)
   inDiseaseSamples <- system(paste(bcftools,"query -l", inDisease), intern=TRUE)
