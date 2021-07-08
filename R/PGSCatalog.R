@@ -356,7 +356,7 @@ filterBCFCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   #system(command=paste0("rm ", inFile, "*"))
   ##system(command=paste0("rm ", filterRsid,"*"))
   #system(command=paste0("rm ", plinkFile,"*"))
-  return(new("pgsProfile", plinkFile = plinkFile, inFile=NULL, inGRS=grsFile,inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
+  return(new("pgsProfile", plinkFile = plinkFile$outFile, inFile=NULL, inGRS=grsFile,inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
 }
 
 filterBCFCalcPos <- function(inObjec, inDis, inFam,inCont=NULL){
@@ -364,13 +364,13 @@ filterBCFCalcPos <- function(inObjec, inDis, inFam,inCont=NULL){
   regionId <- getChrPos(inObjec)
   pgsID <- getPGSId(inObjec)
   filterMergedDis <- filterMergedPos(inFile=inDis, inName=pgsID, inSNPs=grsFile)
-  plinkFileDis <- getMakePlink(inVCF=filterMergedDis)
   if(!(is.null(inCont))) {
     filterMergedCont <- filterMergedPos(inFile=inCont, inName=pgsID, inSNPs=grsFile)
     filterMerged <- mergeVCF(inControl=filterMergedCont, inDisease=filterMergedDis)
     plinkFile <- getMakePlink(inVCF=filterMerged)
     if(file.exists(paste0(plinkFile$outFile, ".fam"))) makeFamFile(inControl=filterMergedCont, inDisease=filterMergedDis, inOut=paste0(plinkFile$outFile, ".fam"))
   } else {
+    plinkFileDis <- getMakePlink(inVCF=filterMergedDis)
      plinkFile <- plinkFileDis$outFile
   }
   totMidSamples <- plinkFile$midSamples
@@ -386,7 +386,7 @@ filterBCFCalcPos <- function(inObjec, inDis, inFam,inCont=NULL){
   print(isControl)
   print(totMidSamples)
   print("test 2")
-  return(new("pgsProfile", plinkFile = plinkFile, inFile=NULL, inGRS=grsFile,inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
+  return(new("pgsProfile", plinkFile = plinkFile$outFile, inFile=NULL, inGRS=grsFile,inRecord=getPGSId(inObjec), hasControl=isControl, midSamples=totMidSamples))
 }
 
 runGRS <- function(inProfile){

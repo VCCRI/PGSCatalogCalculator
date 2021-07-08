@@ -1,6 +1,6 @@
 mergeVCF <- function(inControl, inDisease, inYaml="sample.yaml"){
   # TODO Write SNP Filter only
-  outFile <- gsub("\\.vcf\\.gz", "_merged.vcf.gz", inDisease)
+  outFile <- gsub("\\.bcf", "_merged.bcf", inDisease)
   inControlIndex <- file.exists(paste0(inControl, ".csi"))
   inDiseaseIndex <- file.exists(paste0(inDisease, ".csi"))
   if(!inDiseaseIndex) baseIndex(inDisease, inYaml)
@@ -25,6 +25,7 @@ getDisSample <- function(inControl, inDisease, inYaml="sample.yaml"){
 }
 
 makeFamFile <- function(inControl, inDisease, inOut=NULL,inYaml="sample.yaml"){
+  bcftools <- if(is.null(inYaml)) Sys.getenv("bcftools") else yaml::read_yaml(inYaml)$bcftools
   # TODO Check if there is any overlap in control or diseased samples
   controlSamples <- system(paste(bcftools,"query -l", inControl), intern=TRUE)
   inDiseaseSamples <- system(paste(bcftools,"query -l", inDisease), intern=TRUE)
