@@ -26,8 +26,8 @@ getDisSample <- function(inControl, inDisease, inYaml="sample.yaml"){
 
 makeFamFile <- function(inControl, inDisease, inOut=NULL,inYaml="sample.yaml"){
   # TODO Check if there is any overlap in control or diseased samples
-  controlSamples <- data.table::fread(inControl,header=F)$V1
-  inDiseaseSamples <- data.table::fread(inDisease, header=F)$V1
+  controlSamples <- system(paste(bcftools,"query -l", inControl), intern=TRUE)
+  inDiseaseSamples <- system(paste(bcftools,"query -l", inDisease), intern=TRUE)
   sameSamples <- intersect(inDiseaseSamples, controlSamples)
   matchedSamples <- inDiseaseSamples[match(sameSamples, inDiseaseSamples)]
   matchedSamples <- unlist(lapply(matchedSamples, function(x)paste0("2:", x)))

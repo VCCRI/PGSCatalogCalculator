@@ -344,7 +344,6 @@ filterBCFCalc <- function(inObjec, inDis,inFam,inCont=NULL){
     filterRsidCont <- filterMerged(inFile=inCont, inName=pgsID, inSNPs=rsIDFile)
     filterMergedCont <- filterMergedPos(inFile=filterRsidCont, inName=pgsID, inSNPs=grsFile)
     filterMerged <- mergeVCF(inControl=filterMergedCont, inDisease=filterMergedDis)
-    plinkFileCont <- getMakePlink(inVCF=filterMerged)
     plinkFile <- getMakePlink(inVCF=filterMerged)
     if(file.exists(paste0(plinkFileCont$outFile, ".fam")) &  file.exists(paste0(plinkFileDis$outFile, ".fam"))) makeFamFile(inControl=paste0(plinkFileCont$outFile, ".fam"), inDisease=paste0(plinkFileDis$outFile, ".fam"), inOut=paste0(plinkFile$outFile, ".fam"))
     #plinkFile <- getMergePlink(inControl=plinkFileCont$outFile, inDisease=plinkFileDis$outFile)
