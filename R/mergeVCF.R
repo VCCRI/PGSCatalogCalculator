@@ -24,7 +24,7 @@ getDisSample <- function(inControl, inDisease, inYaml="sample.yaml"){
   return(inDiseaseSamples)
 }
 
-makeFamFile <- function(inControl, inDisease, inYaml="sample.yaml"){
+makeFamFile <- function(inControl, inDisease, inOut=NULL,inYaml="sample.yaml"){
   # TODO Check if there is any overlap in control or diseased samples
   controlSamples <- data.table::fread(inControl,header=F)$V1
   inDiseaseSamples <- data.table::fread(inDisease, header=F)$V1
@@ -39,6 +39,7 @@ makeFamFile <- function(inControl, inDisease, inYaml="sample.yaml"){
   inCont <- data.table::data.table(V1=controlSamples, V2=controlSamples, V3=0, V4=0, V5=0, V6=-9)
   inCont[V1 %in% controlSamples,"V6"] <- 1
   writeFam(inCont, inControl)
+  writeFam(rbind(inCont, inDis), inOut)
   return(inDiseaseSamples)
 }
 

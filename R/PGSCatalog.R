@@ -340,26 +340,18 @@ filterBCFCalc <- function(inObjec, inDis,inFam,inCont=NULL){
   pgsID <- getPGSId(inObjec)
   filterRsidDis <- filterMerged(inFile=inDis, inName=pgsID, inSNPs=rsIDFile)
   filterMergedDis <- filterMergedPos(inFile=filterRsidDis, inName=pgsID, inSNPs=grsFile)
-  plinkFileDis <- getMakePlink(inVCF=filterMergedDis)
-  if(all(!(is.null(plinkFileDis$midSamples)))){
-    stop("Error creating a PLINK File")
-  }
   if(!(is.null(inCont))) {
     filterRsidCont <- filterMerged(inFile=inCont, inName=pgsID, inSNPs=rsIDFile)
     filterMergedCont <- filterMergedPos(inFile=filterRsidCont, inName=pgsID, inSNPs=grsFile)
-    plinkFileCont <- getMakePlink(inVCF=filterMergedCont)
-    if(all(!(is.null(plinkFileCont$midSamples)))){
-      plinkFile <- plinkFileDis
-      inCont <- NULL
-    } else {
-      if(file.exists(paste0(plinkFileCont$outFile, ".fam")) &  file.exists(paste0(plinkFileDis$outFile, ".fam"))) makeFamFile(inControl=paste0(plinkFileCont$outFile, ".fam"), inDisease=paste0(plinkFileDis$outFile, ".fam"), inOut)
-      plinkFile <- getMergePlink(inControl=plinkFileCont$outFile, inDisease=plinkFileDis$outFile)
-    }
+    filterMerged <- mergeVCF(inControl=filterMergedCont, inDisease=filterMergedDis)
+    plinkFileCont <- getMakePlink(inVCF=filterMerged)
+    plinkFile <- getMakePlink(inVCF=filterMerged)
+    if(file.exists(paste0(plinkFileCont$outFile, ".fam")) &  file.exists(paste0(plinkFileDis$outFile, ".fam"))) makeFamFile(inControl=paste0(plinkFileCont$outFile, ".fam"), inDisease=paste0(plinkFileDis$outFile, ".fam"), inOut=paste0(plinkFile$outFile, ".fam"))
+    #plinkFile <- getMergePlink(inControl=plinkFileCont$outFile, inDisease=plinkFileDis$outFile)
   } else {
     plinkFile <- plinkFileDis$outFile
   }
-  if(is.null(plinkFileCont$midSamples))
-  totMidSamples <- c(plinkFileDis$midSamples, plinkFileCont$midSamples)
+  totMidSamples <- plinkFile$midSamples
   isControl <- if(is.null(inCont)) FALSE else TRUE
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
   ##system(command=paste0("rm ", filterMerged, "*"))
@@ -375,24 +367,16 @@ filterBCFCalcPos <- function(inObjec, inDis, inFam,inCont=NULL){
   pgsID <- getPGSId(inObjec)
   filterMergedDis <- filterMergedPos(inFile=inDis, inName=pgsID, inSNPs=grsFile)
   plinkFileDis <- getMakePlink(inVCF=filterMergedDis)
-  if(all(!(is.null(plinkFileDis$midSamples)))){
-    stop("Error creating a PLINK File")
-  }
   if(!(is.null(inCont))) {
     filterMergedCont <- filterMergedPos(inFile=inCont, inName=pgsID, inSNPs=grsFile)
-    plinkFileCont <- getMakePlink(inVCF=filterMergedCont)
+    filterMerged <- mergeVCF(inControl=filterMergedCont, inDisease=filterMergedDis)
+    plinkFile <- getMakePlink(inVCF=filterMerged)
     #plinkFileCont <- NULL
-    if(all(!(is.null(plinkFileCont$midSamples)))){
-      plinkFile <- plinkFileDis$outFile
-      inCont <- NULL
-    } else {
-      if(file.exists(paste0(plinkFileCont$outFile, ".fam")) &  file.exists(paste0(plinkFileDis$outFile, ".fam"))) makeFamFile(inControl=paste0(plinkFileCont$outFile, ".fam"), inDisease=paste0(plinkFileDis$outFile, ".fam"), inOut)
-      plinkFile <- getMergePlink(inControl=plinkFileCont$outFile, inDisease=plinkFileDis$outFile)
-    }
+    if(file.exists(paste0(plinkFileCont$outFile, ".fam")) &  file.exists(paste0(plinkFileDis$outFile, ".fam"))) makeFamFile(inControl=paste0(plinkFileCont$outFile, ".fam"), inDisease=paste0(plinkFileDis$outFile, ".fam"), inOut)
   } else {
      plinkFile <- plinkFileDis$outFile
   }
-  totMidSamples <- if(is.null(inCont)) plinkFileDis$midSamples else c(plinkFileDis$midSamples, plinkFileCont$midSamples)
+  totMidSamples <- plinkFile$midSamples
   isControl <- if(is.null(inCont)) FALSE else TRUE
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
   #inCont <- writeFam(inFam, paste0(plinkFile, ".fam"))
@@ -537,7 +521,7 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
         } else {
           combFrame <- data.table::setDT(list(normFile=unlist(normFile), inFamFile=rep(famFile, times=length(unlist(normFile)))))
         }
-        scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType","runGRSCalc", "runGRSCalcChrPos", "getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat")) %dopar% {
+        scoreFiles <- foreach::foreach(d=iterators::iter(unique(combFrame),by='row'), .export = c("getPGSType", "filterBCFCalcPos", "filterBCFCalcPos","getChrPos", "getGRSInputChrPos", "getGRSInputRsID", "getGRSInputRsID", "getRSIds", "getPGSId", "filterMerged", "filterMergedPos", "filterMergedReg", "getMakePlink", "plinkGRS", "baseIndex", "makeFamFile", "getMergePlink", "inControl"), .packages=c("data.table", "yaml", "assertthat")) %dopar% {
           if(getPGSType(inObjec) == "rsID"){
             if(any(("controlFile" %in% names(d)))){
              scoreFile <- filterBCFCalc(inObjec=inObjec, inDis=d$normFile, inCont=d$controlFile,inFam=d$inFamFile)
