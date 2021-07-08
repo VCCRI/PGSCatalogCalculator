@@ -139,8 +139,12 @@ getPGSProfileMidSamples <- function(inPGS){
   return(inPGS@midSamples)
 }
 
-setPGSProfileInFile <- function(inPGS, inFiles){
-  inFiles <- inPGS@inFile
+setPGSProfileInFile <- function(inPGS, inFile){
+  inPGS@inFile <- inFile
+  return(inPGS)
+}
+setPGSProfilePlinkFile <- function(inPGS, inPlink){
+  inPGS@plinkFile <- inPlink
   return(inPGS)
 }
 setPGSProfileMidSamples <- function(inPGS, inSamples){
@@ -546,9 +550,9 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   scoreFiles <- unique(unlist(scoreFiles))
   allFiles <- unlist(lapply(scoreFiles, getPGSProfilePlinkFile))
   if(length(allFiles) == 0) stop("No Relevant Scores")
-  mergedFile <- getMergePlinkList(allFiles)
-  mergedQCFile <- qcFile(mergedFile)
-  allFiles <- unlist(mapply(setPGSProfileInFile, inPGS=scoreFiles, inFiles=mergedQCFile, SIMPLIFY=FALSE))
+  mergedFiles <- unlist(lapply(allFiles, getMergePlinkList))
+  mergedQCFiles <- unlist(lapply(mergedFiles, qcFile))
+  allFiles <- unlist(mapply(setPGSProfilePlinkFile, scoreFiles, mergedQCFiles, SIMPLIFY=FALSE))
   scoreFiles <- unlist(lapply(allFiles, runGRS))
   #Need to dedup objects
   allControl <- unlist(lapply(scoreFiles, function(x)getPGSProfileHasControl(x)))
