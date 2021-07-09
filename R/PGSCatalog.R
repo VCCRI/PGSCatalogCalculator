@@ -7,7 +7,9 @@
 #' @slot midSamples A length-n character vector
 #' @export pgsProfile
 methods::setClassUnion("nullOrCharacter", c("NULL", "character"))
-pgsProfile <- methods::setClass("pgsProfile", slots=(list(plinkFile="nullOrCharacter",inFile="nullOrCharacter", inGRS="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
+methods::setClassUnion("nullOrDatatable", c("NULL", "data.table"))
+methods::setClass("pgsInput", slots=(list(pgsInput="nullOrDatatable", pgsType="nullOrCharacter", pgsId="character")))
+methods::setClass("pgsProfile", slots=(list(plinkFile="nullOrCharacter",inFile="nullOrCharacter", inGRS="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
 
 getPGSEFO <- function(inFile){
   inData <- readxl::read_xlsx(inFile, sheet=7)
@@ -23,7 +25,7 @@ getEUBuild <- function(inFile){
   inData <- data.table::setDT(inData)
   #needCols <- c("Ontology Trait ID", "Ontology Trait Label",	"Ontology Trait Description", "Ontology URL")
   assertthat::assert_that(ncol(inData) == 17)
-  inIds <- inData[grepl("European", `Broad Ancestry Category`),`Polygenic Score (PGS) ID`]
+  #inIds <- inData[grepl("European", `Broad Ancestry Category`),`Polygenic Score (PGS) ID`]
   return(inIds)
 }
 
@@ -152,11 +154,6 @@ setPGSProfileMidSamples <- function(inPGS, inSamples){
   return(inPGS)
 }
 #' @importFrom methods setClass setAs
-setClassPGSGRS <- function(){
-  setClassUnion("nullOrDatatable", c("NULL", "data.table"))
-  setClassUnion("nullOrCharacter", c("NULL", "character"))
-  setClass("pgsInput", slots=(list(pgsInput="nullOrDatatable", pgsType="nullOrCharacter", pgsId="character")))
-}
 pgsGRS <- function(inFile){
   ## TODO Recognise when there multiple columns with the same column name
   ## Check if variant is A,C,T,G handle edge case where variant is 
@@ -223,7 +220,6 @@ getEUFiles <- function(){
   retFiles <- foreach::foreach(d=iterators::iter(ftpLinks, by='row'), .export = c("getPGSFiles", "pgsGRS", "setClassPGSGRS"), .packages=c("data.table", "httr", "assertthat")) %dopar% {
   #retFiles <- apply(ftpLinks, 1, function(d){
     inFile <- getPGSFiles(d)
-    setClassPGSGRS()
     inClass <- pgsGRS(inFile)
   #})
   }
@@ -234,7 +230,6 @@ getEUFiles <- function(){
 }
 
 checkFiles <- function(){
-  setClassPGSGRS()
   pgsObj <- pgsGRS(list(file='/home/114/sk3015/Analysis/PGS_PRSice/mockCheckSN.tsv', pgsId='testing'))
 }
 
@@ -579,6 +574,6 @@ grabScoreId <- function(inFile=NULL, inPGSID=NULL, inPGSIDS=NULL, inRef=NULL, in
   if(!is.null(inControl)){
     if(nrow(inControl) == 0) stop("Unable to generate scores due to control dataset failing QC")
   }
-  setPlots(scoreDat, inControl, inOutDir=outDir)
+  setPlots(scoreDat, inControl, inOutDir=outDir, inID=inPGSID)
  
 }

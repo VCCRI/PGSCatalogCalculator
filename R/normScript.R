@@ -20,6 +20,7 @@ baseNorm <- function(inVCF, inRef, outFile, inYaml=NULL, inLog,inCL){
     if(!(file.exists(filtSNP))){
       sprintf("Started Filtering on Chrom %s for %s", inChrom, inVCF)
       filterSNP <- system2(command=bcftools, args=c('view', inVCF, '-r', inChrom, '-O', 'z','-o', filtSNP, '--threads', '2'))
+      filterSNP <- system2(command=bcftools, args=c('annotate', '-x', 'INFO,^FORMAT/GT,FORMAT/PL',filtSNP , '--threads', '2'))
       baseIndex(filtSNP, inYaml)
       
       logger::log_info(sprintf("End Filtering on Chrom %s for %s", inChrom, inVCF))

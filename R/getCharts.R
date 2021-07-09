@@ -129,7 +129,7 @@ getQuantilePlot <- function(inData){
   dev.off()
 }
 
-getPlots <- function(inDis, inControl, inOutDir=NULL){
+getPlots <- function(inDis, inControl, inID, inOutDir=NULL){
   disData <- inDis
   if(is.null(inControl)){
     print("Using 1000G Control Samples as specified or due to insufficient control samples")
@@ -150,7 +150,7 @@ getPlots <- function(inDis, inControl, inOutDir=NULL){
       needScore <- scoreData[,needCols, with=FALSE]
       colnames(needScore) <- c("Sample", "Subject Type", "PRS","Risk")
     }
-    fwrite(needScore, paste(inOutDir, "sample_out.csv", sep="/"))
+    fwrite(needScore, paste(inOutDir, paste0(inID, "sample_out.csv"), sep="/"))
     if(length(unique(needScore$PRS)) <= 4){
       logger::log_info(sprintf("Not Able to create quantiles based off data"))
       return(NULL)
@@ -167,11 +167,11 @@ getPlots <- function(inDis, inControl, inOutDir=NULL){
   return(lPLots)
 }
 
-setPlots <- function(inDis, inControl=NULL, inOutDir=NULL){
+setPlots <- function(inDis, inID, inControl=NULL, inOutDir=NULL){
   #allPlots <- getPlots(inFiles$inFile, inFiles$inRecord, inControl,inOutDir)
-  allPlots <- getPlots(inDis, inControl, inOutDir)
+  allPlots <- getPlots(inDis, inControl, inID, inOutDir)
   inTime <- Sys.time()
-  inFile <- paste(inOutDir, "boxplot.png", sep="/")
+  inFile <- paste(inOutDir, paste0(inID, "boxplot.png"), sep="/")
   #png(filename=inFile, width=1920, height=1080)
   ggplot2::ggsave(filename=inFile, plot=cowplot::plot_grid(plotlist=allPlots))
   #dev.off()
