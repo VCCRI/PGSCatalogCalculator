@@ -24,13 +24,14 @@ getEUBuild <- function(inFile){
   inData <- readxl::read_xlsx(inFile, sheet=5)
   inData <- data.table::setDT(inData)
   #needCols <- c("Ontology Trait ID", "Ontology Trait Label",	"Ontology Trait Description", "Ontology URL")
-  assertthat::assert_that(ncol(inData) == 17)
+  assertthat::assert_that(ncol(inData) == 18)
   #inIds <- inData[grepl("European", `Broad Ancestry Category`),`Polygenic Score (PGS) ID`]
+  inIds <- inData$`Polygenic Score (PGS) ID`
   return(inIds)
 }
 
 getPGSMeta <- function(inFile){
-  inData <- readxl::read_xlsx(inFile, sheet=2)
+  inData <- readxl::read_xlsx(inFile, sheet=5)
   inData <- data.table::setDT(inData)
   #Mapped Traits is a comma seperated list
   needCols <- c(
@@ -48,10 +49,12 @@ getPGSMeta <- function(inFile){
   ,"Publication (PMID)"
   ,"Publication (doi)"
   ,"Score and results match the original publication"
+  ,"Ancestry Distribution (%) - Source of Variant Associations (GWAS)"
+  ,"Ancestry Distribution (%) - Score Development/Training	Ancestry Distribution (%) - PGS Evaluation"
   ,"FTP link"
   ,"License/Terms of Use"
   )
-  assertthat::assert_that(ncol(inData) == 16)
+  assertthat::assert_that(ncol(inData) == 19)
   assertthat::assert_that(all.equal(colnames(inData), needCols))
   ##Generate FTP URL
   inData[,ftp_link := `FTP link`]
