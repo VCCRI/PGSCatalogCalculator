@@ -8,8 +8,8 @@
 #' @export pgsProfile
 methods::setClassUnion("nullOrCharacter", c("NULL", "character"))
 methods::setClassUnion("nullOrDatatable", c("NULL", "data.table"))
-methods::setClass("pgsInput", slots=(list(pgsInput="nullOrDatatable", pgsType="nullOrCharacter", pgsId="character")))
-methods::setClass("pgsProfile", slots=(list(plinkFile="nullOrCharacter",inFile="nullOrCharacter", inGRS="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
+pgsInput <- methods::setClass("pgsInput", slots=(list(pgsInput="nullOrDatatable", pgsType="nullOrCharacter", pgsId="character")))
+pgsProfile <- methods::setClass("pgsProfile", slots=(list(plinkFile="nullOrCharacter",inFile="nullOrCharacter", inGRS="nullOrCharacter", inRecord="nullOrCharacter", hasControl="logical", midSamples="nullOrCharacter")))
 
 getPGSEFO <- function(inFile){
   inData <- readxl::read_xlsx(inFile, sheet=7)
